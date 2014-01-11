@@ -41,4 +41,6 @@ asb -b amrio -d custom -i all
 ```
 
 ## 联系
-[amriogm@gmail.com](mailto:amriogm@gmail.com)
+* EMAIL [amriogm@gmail.com](mailto:amriogm@gmail.com)  
+* QQ 841830150  
+* github [https://github.com/amriogit/amrio-seajs-builder](https://github.com/amriogit/amrio-seajs-builder)
