@@ -1,5 +1,5 @@
 # amrio-seajs-builder
-amrio-seajs-builder 是一个 [__seajs__](http://seajs.org/docs/) 模块构建命令工具，使用 grunt 作为基础，采用seajs 官方
+[amrio-seajs-builder](https://github.com/amriogit/amrio-seajs-builder) 是一个 [__seajs__](http://seajs.org/docs/) 模块构建命令工具，使用 grunt 作为基础，采用seajs 官方
 推荐的 [grunt-cmd-transport](https://npmjs.org/package/grunt-cmd-transport)，
 [grunt-cmd-concat](https://npmjs.org/package/grunt-cmd-concat) 构建模块进行构建。  
 此模块的目的是为了进行更好的自定义构建，提供转换，合并，压缩 js、css 的一条龙功能，  
