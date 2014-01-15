@@ -10,42 +10,55 @@ function builder(grunt){
         util = require('util')
 
     program.version('0.0.1')
+        .option('--force', '强制执行')
         .option('-b, --build [path]', '构建路径，必填项！', '')
         .option('-d, --dist [path]', '部署路径，默认值: sea-modules', 'sea-modules')
-        .option('-i --include [option]', '构建包含范围: self, relative, all；默认值: relative', 'relative')
+        .option('-i, --include [option]', '构建包含范围: self, relative, all；默认值: relative', 'relative')
+        .option('-p, --paths [path]', 'paths 路径，默认值: sea-modules', 'sea-modules')
         .parse(process.argv);
+
+    grunt.option('force', program.force)
 
     var cwd = './',
         tmp = path.join(cwd, '.tmp'),
-        modulePath = path.join(cwd, './sea-modules')
+        modulePath = path.join(cwd, program.paths)
 
     var buildInput = program.build,
         buildOuput = program.dist,
         buildInclude = program.include
 
-    var info = '构建路径 -b=%s\n部署路径 -d=%s\n构建范围 -i=%s\n'
+    var info = '构建路径 -b=%s\n部署路径 -p=%s\npaths 路径 -m=%s\n构建范围 -i=%s\n'
 
-    grunt.log.ok(util.format(info, buildInput, buildOuput, buildInclude))
+    grunt.log.ok(util.format(info, buildInput, buildOuput, modulePath, buildInclude))
 
     buildInput || grunt.fatal('构建路径出错！', 2)
 
-    var paths = [tmp, modulePath, buildOuput, cwd]
-
     grunt.initConfig({
-        clean: [tmp, path.join(buildOuput, buildInput)],
+        clean: [tmp],
+        copy: {
+            'all': {
+                files: [{
+                    expand: true,
+                    src: path.join(buildInput, '**'),
+                    dest: buildOuput
+                }]
+            }
+        },
         transport: {
+            options: {
+                debug: false
+            },
             'build': {
                 options: {
                     alias: {
                         jquery: 'jquery',
                         $: '$'
                     },
-                    paths: paths
+                    paths: [buildInput, modulePath, cwd, 'sea-modules']
                 },
                 files: [{
                     expand: true,
-                    filter: 'isFile',
-                    src: path.join(buildInput, '**'),
+                    src: path.join(buildInput, '**/*.{js,css,json,tpl,html,htm}'),
                     dest: tmp
                 }]
             },
@@ -58,8 +71,7 @@ function builder(grunt){
                 files: [{
                     cwd: tmp,
                     expand: true,
-                    filter: 'isFile',
-                    src: path.join(buildInput, '**/*.css'),
+                    src: '**/*.css',
                     dest: tmp
                 }]
             }
@@ -67,18 +79,18 @@ function builder(grunt){
         concat: {
             options: {
                 css2js: style.css2js,
-                paths: paths
+                paths: [tmp, modulePath, 'sea-modules']
             },
             'build': {
                 options: {
                     include: buildInclude
                 },
                 files: [{
-                    cwd: path.join(tmp, buildInput),
+                    cwd: tmp,
                     expand: true,
                     filter: 'isFile',
-                    src: ['**', '!**/*.css.js'],
-                    dest: path.join(buildOuput, buildInput)
+                    src: ['**'],
+                    dest: buildOuput
                 }]
             }
         },
@@ -90,32 +102,37 @@ function builder(grunt){
             },
             'build': {
                 files: [{
-                    cwd: path.join(buildOuput, buildInput),
+                    cwd: buildOuput,
                     expand: true,
-                    filter: 'isFile',
-                    src: ['**/*.js', '!**/*{debug.js,.css.js,.tpl.js}'],
-                    dest: path.join(buildOuput, buildInput)
+                    src: [path.join(buildInput, '**/*.js'), '!**/*-debug.js'],
+                    dest: buildOuput
                 }]
             }
         },
         cssmin: {
             'build': {
-                cwd: path.join(buildOuput, buildInput),
+                cwd: buildOuput,
                 expand: true,
-                filter: 'isFile',
-                src: ['**/*.css', '!**/*-debug.css'],
-                dest: path.join(buildOuput, buildInput)
+                src: [path.join(buildInput, '**/*.css'), '!**/*-debug.css'],
+                dest: buildOuput
             }
         }
     })
+    
+    // 切换目录，避免加载不到插件
+    !function(){
+        var cwd = process.cwd()
+        process.chdir(__dirname)
+        grunt.loadNpmTasks('grunt-contrib-clean')
+        grunt.loadNpmTasks('grunt-contrib-copy')
+        grunt.loadNpmTasks('grunt-contrib-uglify')
+        grunt.loadNpmTasks('grunt-contrib-cssmin')
+        grunt.loadNpmTasks('grunt-cmd-transport')
+        grunt.loadNpmTasks('grunt-cmd-concat')
+        process.chdir(cwd)
+    }()
 
-    grunt.loadNpmTasks('grunt-contrib-clean')
-    grunt.loadNpmTasks('grunt-contrib-uglify')
-    grunt.loadNpmTasks('grunt-contrib-cssmin')
-    grunt.loadNpmTasks('grunt-cmd-transport')
-    grunt.loadNpmTasks('grunt-cmd-concat')
-
-    grunt.registerTask('build', ['clean', 'transport', 'concat', 'uglify', 'cssmin', 'clean:0'])
+    grunt.registerTask('build', ['clean', 'copy', 'transport', 'concat', 'uglify', 'cssmin', 'clean'])
     grunt.registerTask('default', 'build')
 
     grunt.task.run('default')
