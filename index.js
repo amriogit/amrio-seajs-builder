@@ -9,7 +9,9 @@ function builder(grunt){
     var path = require('path'),
         util = require('util')
 
-    program.version('0.0.1')
+    var pkg = grunt.file.readJSON('package.json')
+
+    program.version(pkg.version)
         .option('--force', '强制执行')
         .option('-b, --build [path]', '构建路径，必填项！', '')
         .option('-d, --dist [path]', '部署路径，默认值: sea-modules', 'sea-modules')
@@ -89,7 +91,7 @@ function builder(grunt){
                     cwd: tmp,
                     expand: true,
                     filter: 'isFile',
-                    src: ['**'],
+                    src: ['**/*.{js,css}', '!**/*{-debug,css}.{js,css}'],
                     dest: buildOuput
                 }]
             }

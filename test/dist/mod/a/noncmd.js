@@ -1,3 +1,1 @@
-(function(){
-    console.log('noncmd')
-})()
+!function(){console.log("noncmd")}();
