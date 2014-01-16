@@ -1,5 +1,12 @@
 #!/usr/bin/env node
 
+function switchENV(fn){
+    var cwd = process.cwd()
+    process.chdir(__dirname)
+    var ret = fn()
+    process.chdir(cwd)
+    return ret
+}
 function builder(grunt){
 
     // 外部模块
@@ -9,7 +16,9 @@ function builder(grunt){
     var path = require('path'),
         util = require('util')
 
-    var pkg = grunt.file.readJSON('package.json')
+    var pkg = switchENV(function(){
+        return grunt.file.readJSON('package.json')
+    })
 
     program.version(pkg.version)
         .option('--force', '强制执行')
@@ -121,18 +130,14 @@ function builder(grunt){
         }
     })
     
-    // 切换目录，避免加载不到插件
-    !function(){
-        var cwd = process.cwd()
-        process.chdir(__dirname)
+    switchENV(function(){
         grunt.loadNpmTasks('grunt-contrib-clean')
         grunt.loadNpmTasks('grunt-contrib-copy')
         grunt.loadNpmTasks('grunt-contrib-uglify')
         grunt.loadNpmTasks('grunt-contrib-cssmin')
         grunt.loadNpmTasks('grunt-cmd-transport')
         grunt.loadNpmTasks('grunt-cmd-concat')
-        process.chdir(cwd)
-    }()
+    })
 
     grunt.registerTask('build', ['clean', 'copy', 'transport', 'concat', 'uglify', 'cssmin', 'clean'])
     grunt.registerTask('default', 'build')
