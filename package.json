@@ -19,5 +19,16 @@
   },
   "bin": {
     "asb": "./index.js"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/amriogit/amrio-seajs-builder.git"
+  },
+  "keywords": [
+    "seajs",
+    "seajs-build",
+    "seajs-builder",
+    "grunt-cmd-transport",
+    "grunt-cmd-concat"
+  ]
 }
