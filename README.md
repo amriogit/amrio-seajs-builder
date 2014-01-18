@@ -21,6 +21,7 @@ npm install -g amrio-seajs-builder
 -b, --build [path] 构建路径，必填项！  
 -d, --dist [path] 部署路径，默认值: sea-modules  
 -i, --include [option] 构建包含范围: self, relative, all；默认值: relative  
+-p, --paths [path] paths 路径，默认值: sea-modules，用于指定构建的 paths 路径，模块转换、合并找不到路径时可以配置此项
 
 ### 常规用法
 ```
