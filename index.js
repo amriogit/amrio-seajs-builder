@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 
-function switchENV(fn){
-    var cwd = process.cwd()
-    process.chdir(__dirname)
-    var ret = fn()
-    process.chdir(cwd)
-    return ret
-}
-function builder(grunt){
+(function(grunt){
 
-    // 外部模块
+    function switchENV(fn){
+        var cwd = process.cwd()
+        process.chdir(__dirname)
+        var ret = fn()
+        process.chdir(cwd)
+        return ret
+    }
+
     var program = require('commander'),
         style = require('grunt-cmd-transport').style
 
@@ -21,28 +21,30 @@ function builder(grunt){
     })
 
     program.version(pkg.version)
+        .option('-b, --build [path]', '构建路径')
+        .option('-d, --dist [path]', '部署路径', 'sea-modules')
+        .option('-i, --include [option]', '构建包含范围', 'relative')
+        .option('-m, --modules [path]', 'modules 路径', 'sea-modules')
         .option('--force', '强制执行')
-        .option('-b, --build [path]', '构建路径，必填项！', '')
-        .option('-d, --dist [path]', '部署路径，默认值: sea-modules', 'sea-modules')
-        .option('-i, --include [option]', '构建包含范围: self, relative, all；默认值: relative', 'relative')
-        .option('-p, --paths [path]', 'paths 路径，默认值: sea-modules', 'sea-modules')
         .parse(process.argv);
 
     grunt.option('force', program.force)
 
     var cwd = './',
         tmp = path.join(cwd, '.tmp'),
-        modulePath = path.join(cwd, program.paths)
+        tmpTransport = path.join(tmp, '.transport'),
+        tmpConcat = path.join(tmp, '.concat'),
+        modulePath = path.join(cwd, program.modules)
 
     var buildInput = program.build,
         buildOuput = program.dist,
         buildInclude = program.include
 
-    var info = '构建路径 -b=%s\n部署路径 -p=%s\npaths 路径 -m=%s\n构建范围 -i=%s\n'
+    var info = '-b=%s\n-p=%s\n-m=%s\n-i=%s\n'
 
     grunt.log.ok(util.format(info, buildInput, buildOuput, modulePath, buildInclude))
 
-    buildInput || grunt.fatal('构建路径出错！', 2)
+    buildInput || grunt.fatal('invalid -b(--build) option', 2)
 
     grunt.initConfig({
         clean: [tmp],
@@ -65,12 +67,12 @@ function builder(grunt){
                         jquery: 'jquery',
                         $: '$'
                     },
-                    paths: [buildInput, modulePath, cwd, 'sea-modules']
+                    paths: [modulePath, 'sea-modules']
                 },
                 files: [{
                     expand: true,
                     src: path.join(buildInput, '**/*.{js,css,json,tpl,html,htm}'),
-                    dest: tmp
+                    dest: tmpTransport
                 }]
             },
             'build-css2js': {
@@ -80,27 +82,40 @@ function builder(grunt){
                     }
                 },
                 files: [{
-                    cwd: tmp,
+                    cwd: tmpTransport,
                     expand: true,
                     src: '**/*.css',
-                    dest: tmp
+                    dest: tmpTransport
                 }]
             }
         },
         concat: {
             options: {
-                css2js: style.css2js,
-                paths: [tmp, modulePath, 'sea-modules']
+                css2js: style.css2js
             },
-            'build': {
+            'pre-build': {
                 options: {
+                    paths: [tmpTransport, modulePath, 'sea-modules'],
                     include: buildInclude
                 },
                 files: [{
-                    cwd: tmp,
+                    cwd: tmpTransport,
                     expand: true,
                     filter: 'isFile',
-                    src: ['**/*.{js,css}', '!**/*{-debug,css}.{js,css}'],
+                    src: ['**/*.{js,css}', '!**/*{-debug,css}.*'],
+                    dest: tmpConcat
+                }]
+            },
+            'build': {
+                options: {
+                    paths: [tmpConcat, modulePath, 'sea-modules'],
+                    include: buildInclude
+                },
+                files: [{
+                    cwd: tmpTransport,
+                    expand: true,
+                    filter: 'isFile',
+                    src: ['**/*.{js,css}', '!**/*{-debug,css}.*'],
                     dest: buildOuput
                 }]
             }
@@ -109,13 +124,14 @@ function builder(grunt){
             options: {
                 mangle: {
                     except: ['$', 'jQuery']
-                }
+                },
+                banner: '/* build by amrio-seajs-builder <%= grunt.template.today("yyyy-mm-dd HH:MM:ss") %> */\n'
             },
             'build': {
                 files: [{
                     cwd: buildOuput,
                     expand: true,
-                    src: [path.join(buildInput, '**/*.js'), '!**/*-debug.js'],
+                    src: [path.join(buildInput, '**/*.js'), '!**/*-debug.*'],
                     dest: buildOuput
                 }]
             }
@@ -124,7 +140,7 @@ function builder(grunt){
             'build': {
                 cwd: buildOuput,
                 expand: true,
-                src: [path.join(buildInput, '**/*.css'), '!**/*-debug.css'],
+                src: [path.join(buildInput, '**/*.css'), '!**/*-debug.*'],
                 dest: buildOuput
             }
         }
@@ -144,6 +160,5 @@ function builder(grunt){
 
     grunt.task.run('default')
     grunt.task.start()
-}
 
-builder(require('grunt'))
+})(require('grunt'))
