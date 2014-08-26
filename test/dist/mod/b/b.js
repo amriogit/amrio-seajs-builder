@@ -1,1 +1,0 @@
-define("mod/b/b",[],function(){return"b"});

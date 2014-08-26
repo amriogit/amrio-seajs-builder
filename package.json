@@ -9,14 +9,15 @@
   "author": "amrio",
   "license": "BSD-2-Clause",
   "dependencies": {
-    "grunt-contrib-clean": "~0.5.0",
+    "commander": "~2.1.0",
     "grunt": "~0.4.2",
     "grunt-cmd-concat": "~0.2.7",
     "grunt-cmd-transport": "~0.4.1",
-    "grunt-contrib-uglify": "~0.2.7",
+    "grunt-contrib-clean": "~0.5.0",
+    "grunt-contrib-copy": "~0.5.0",
     "grunt-contrib-cssmin": "~0.7.0",
-    "commander": "~2.1.0",
-    "grunt-contrib-copy": "~0.5.0"
+    "grunt-contrib-uglify": "~0.2.7",
+    "underscore": "^1.6.0"
   },
   "bin": {
     "asb": "./index.js"
