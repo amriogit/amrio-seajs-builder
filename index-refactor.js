@@ -20,5 +20,5 @@ program.version(pkg.version)
     .option('--force', '强制执行')
     .parse(process.argv)
 
-// taskMain(program.input, program.output, program.include, program)
-taskMain(grunt, 'test/mod', 'test/dist', 'all')
+taskMain(grunt, program.input, program.output, program.include)
+// taskMain(grunt, 'test/mod', 'test/dist', 'all')

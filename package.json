@@ -20,7 +20,7 @@
     "underscore": "^1.6.0"
   },
   "bin": {
-    "asb": "./index.js"
+    "asb": "./index-refactor.js"
   },
   "repository": {
     "type": "git",
