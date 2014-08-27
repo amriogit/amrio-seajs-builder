@@ -6,7 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "amrio",
+  "author": {
+    "name": "amrio"
+  },
   "license": "BSD-2-Clause",
   "dependencies": {
     "commander": "~2.1.0",
@@ -20,7 +22,7 @@
     "underscore": "^1.6.0"
   },
   "bin": {
-    "asb": "./index-refactor.js"
+    "asb": "./index.js"
   },
   "repository": {
     "type": "git",
@@ -32,5 +34,14 @@
     "seajs-builder",
     "grunt-cmd-transport",
     "grunt-cmd-concat"
-  ]
+  ],
+  "readme": "# amrio-seajs-builder\r\n[amrio-seajs-builder](https://github.com/amriogit/amrio-seajs-builder) 是一个 [__seajs__](http://seajs.org/docs/) 模块构建命令工具，使用 grunt 作为基础，采用seajs 官方\r\n推荐的 [grunt-cmd-transport](https://npmjs.org/package/grunt-cmd-transport)，\r\n[grunt-cmd-concat](https://npmjs.org/package/grunt-cmd-concat) 构建模块进行构建。  \r\n此模块的目的是为了进行更好的自定义构建，提供转换，合并，压缩 js、css 的一条龙功能，  \r\n提供了命令参数进行更好的自定义构建，方便没有使用 spm 标准构建的项目进行自定义构建  \r\n \r\n__此模块目前处于beta状态，可能会有bug哦！__\r\n\r\n## 安装 amrio-seajs-builder\r\n此模块需要全局安装，以便使用全局命令 asb\r\n```\r\nnpm install -g amrio-seajs-builder\r\n```\r\n\r\n## 使用\r\n使用 npm 全局安装完毕后，可以在命令行中使用：asb -h 查看该命令的帮助信息，\r\n如果报错，请重新全局安装，直到命令行中 asb 命令可用\r\n\r\n### 参数\r\n-b, --build [path] 构建路径，必填项！  \r\n-d, --dist [path] 部署路径，默认值: sea-modules  \r\n-i, --include [option] 构建包含范围: self, relative, all；默认值: relative  \r\n-p, --paths [path] paths 路径，默认值: sea-modules，用于指定构建的 paths 路径，模块转换、合并找不到路径时可以配置此项\r\n\r\n### 常规用法\r\n```\r\nasb -b amrio\r\n```  \r\n-b 参数是指定构建源文件路径的，这条命令会找到当前执行目录下的 amrio 文件夹，  \r\n并且把里面所有的可以构建的模块文件使用 relative 的构建范围，  \r\n构建至当前执行目录下的 sea-modules 文件夹里面，构建完毕后会在 sea-modules 目录下生成 amrio/** 文件\r\n\r\n##### 构建到指定目录\r\n```\r\nasb -b amrio -d custom\r\n```\r\n\r\n##### 使用 all 构建范围构建到指定目录\r\n```\r\nasb -b amrio -d custom -i all\r\n```\r\n\r\n## 联系\r\n* EMAIL [amriogm@gmail.com](mailto:amriogm@gmail.com)  \r\n* QQ 841830150  \r\n* github [https://github.com/amriogit/amrio-seajs-builder](https://github.com/amriogit/amrio-seajs-builder)\r\n",
+  "readmeFilename": "README.md",
+  "bugs": {
+    "url": "https://github.com/amriogit/amrio-seajs-builder/issues"
+  },
+  "homepage": "https://github.com/amriogit/amrio-seajs-builder",
+  "_id": "amrio-seajs-builder@0.0.3",
+  "_shasum": "6063662ea31c25d23a5121d46693639559c77084",
+  "_from": "amrio-seajs-builder"
 }
