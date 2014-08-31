@@ -1,0 +1,1 @@
+define("biz/c/c",["./c1","amrio/y/y","amrio/y/y1"],function(a,b,c){a("./c1"),a("amrio/y/y"),c.exports="c"}),define("biz/c/c1",[],function(a,b,c){c.exports="c1"}),define("amrio/y/y",["./y1"],function(a,b,c){a("./y1"),c.exports="y"}),define("amrio/y/y1",[],function(a,b,c){c.exports="y1"});

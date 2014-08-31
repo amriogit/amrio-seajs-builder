@@ -1,0 +1,1 @@
+define("amrio/y/y",["./y1"],function(a,b,c){a("./y1"),c.exports="y"}),define("amrio/y/y1",[],function(a,b,c){c.exports="y1"});
