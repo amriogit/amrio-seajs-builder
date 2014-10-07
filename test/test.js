@@ -16,7 +16,10 @@ describe('amrio-seajs-builder usage', function() {
             cwd: './',
             src: 'amrio/**/*.{js,css,tpl}',
             dest: './dist/transport',
-            paths: ['./']
+            paths: ['./'],
+            alias: {
+                lala: 'lala'
+            }
         })
     })
 
@@ -80,6 +83,18 @@ describe('amrio-seajs-builder usage', function() {
     it('clean', function() {
         asb.clean({
             src: ['./dist'],
+        })
+    })
+})
+
+describe('commander tools', function() {
+    it('build', function(done) {
+        var exec = require('child_process').exec
+        exec('node ../cli -a ./alias.json -i all -b amrio', function(err, sto) {
+            if(err) throw err
+            assert.ok(sto.indexOf('File "tmp/concat/amrio/y/y1.js" created.') > -1, 'build error')
+            assert.ok(sto.indexOf('Cleaning ./tmp...') > -1, 'build error')
+            done()
         })
     })
 })

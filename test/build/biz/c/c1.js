@@ -1,1 +1,0 @@
-define("biz/c/c1",[],function(a,b,c){c.exports="c1"});
