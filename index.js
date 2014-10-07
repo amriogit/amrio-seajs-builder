@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 'use strict';
 
 var grunt = require('grunt')

@@ -27,7 +27,13 @@ function getOptions() {
         })
         .option('-d, --dist <path>', '部署路径', './sea-modules')
         .option('-i, --include <include>', '构建包含范围', 'relative')
-        .option('-p, --paths <path>', 'paths 路径', './sea-modules')
+        .option('-p, --paths <path>', 'paths 路径', function(val) {
+            if(val) {
+                return val.split(',')
+            } else {
+                return ['./sea-modules']
+            }
+        })
         .option('-a, --alias <path>', 'alias 别名文件路径', './package.json')
         .option('--force', '强制执行')
         .parse(process.argv)
@@ -61,7 +67,7 @@ function start(options) {
             cwd: './',
             src: path.join(dir, '**/*.{js,css,tpl,html}'),
             dest: transportDest,
-            paths: ['./', options.paths],
+            paths: ['./'].concat(options.paths),
             alias: options.alias
         })
 
@@ -70,7 +76,7 @@ function start(options) {
             src: isDir ? ['**/*.js', '!**/*-debug.js'] : build,
             dest: concatDest,
             include: options.include,
-            paths: [transportDest, options.paths]
+            paths: [transportDest].concat(options.paths)
         })
     })
 

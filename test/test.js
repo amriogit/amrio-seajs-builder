@@ -2,6 +2,7 @@ var assert = require('assert')
 var fs = require('fs')
 var asb = require('../index')
 
+process.chdir('./test')
 describe('amrio-seajs-builder usage', function() {
 
     it('clean', function() {
