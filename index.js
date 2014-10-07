@@ -1,5 +1,9 @@
+#!/usr/bin/env node
+'use strict';
+
 var grunt = require('grunt')
 
+// 切换工作目录，加载插件
 var cwd = process.cwd()
 process.chdir(__dirname)
 grunt.loadNpmTasks('grunt-contrib-clean')
