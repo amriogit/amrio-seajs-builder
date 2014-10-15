@@ -1,101 +1,42 @@
-var assert = require('assert')
-var fs = require('fs')
-var asb = require('../index')
+var asb = require('../')
 
-process.chdir('./test')
-describe('amrio-seajs-builder usage', function() {
-
-    it('clean', function() {
-        asb.clean({
-            src: ['./dist', './build']
-        })
-        assert.ok(!fs.existsSync('./dist'), 'clean dist')
-    })
-
-    it('transport amrio', function() {
+var steps = [
+    function() {
         asb.transport({
-            cwd: './',
-            src: 'amrio/**/*.{js,css,tpl}',
-            dest: './dist/transport',
-            paths: ['./'],
-            alias: {
-                lala: 'lala'
-            }
+            cwd: 'assets',
+            src: '{amrio,biz}/**/*.*',
+            dest: '.transport',
+            paths: ['assets']
         })
-    })
-
-    it('concat amrio', function() {
+    },
+    function() {
         asb.concat({
-            cwd: './dist/transport',
+            cwd: '.transport',
             src: 'amrio/**/*.*',
-            dest: './dist/concat',
-
-            include: 'all',
-            paths: ['./dist/transport']
+            dest: '.concat',
+            paths: ['.transport']
         })
-    })
-
-    it('transport biz', function() {
-        asb.transport({
-            cwd: './',
-            src: 'biz/**/*.{js,css,tpl}',
-            dest: './dist/transport',
-            paths: ['./', './dist/concat/amrio']
-        })
-    })
-
-    it('concat biz all', function() {
-        asb.concat({
-            cwd: './dist/transport',
-            src: 'biz/**/*.*',
-            dest: './dist/concat',
-
-            include: 'all',
-            paths: ['./dist/transport']
-        })
-    })
-
-    it('uglify biz and amrio', function() {
-        asb.uglify({
-            cwd: './dist/concat',
-            src: '**/*.js',
-            dest: './dist/concat',
-            mangle: {},
-            banner: ''
-        })
-    })
-
-    it('cssmin biz and amrio', function() {
-        asb.cssmin({
-            cwd: './dist/concat',
-            src: '**/*.css',
-            dest: './dist/concat'
-        })
-    })
-
-    it('copy', function() {
-        asb.copy({
-            cwd: './dist/concat',
-            src: ['**/*.*', '!**/*-debug.*'],
-            dest: './build/'
-        })
-    })
-
-    it('clean', function() {
+    },
+    function() {
         asb.clean({
-            src: ['./dist'],
+            cwd: '.transport',
+            src: 'amrio'
         })
-    })
-})
 
-describe('commander tools', function() {
-    it('build', function(done) {
-        var exec = require('child_process').exec
-        exec('node ../cli -a ./alias.json -i all -b amrio', function(err, sto) {
-            if(err) throw err
-            assert.ok(sto.indexOf('File "tmp/concat/amrio/y/y1.js" created.') > -1, 'build error')
-            assert.ok(sto.indexOf('Cleaning ./tmp...') > -1, 'build error')
-            done()
+        asb.concat({
+            cwd: '.transport',
+            src: 'biz/**/*.*',
+            dest: '.concat',
+            paths: ['.transport']
         })
-    })
-})
+    }
+]
+
+function doStep(step) {
+    step--
+    steps[step] && steps[step]()
+}
+
+doStep(1)
+doStep(2)
+doStep(3)
