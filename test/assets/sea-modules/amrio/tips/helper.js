@@ -1,0 +1,1 @@
+define("amrio/tips/helper",[],function(a,b,c){"use strict";c.exports={helper:{}}});

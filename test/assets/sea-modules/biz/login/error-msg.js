@@ -1,0 +1,1 @@
+define("biz/login/error-msg",[],function(a,b,c){"use strict";c.exports={error:"error"}});

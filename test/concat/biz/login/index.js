@@ -1,6 +1,8 @@
-define("biz/login/index", [ "../../amrio/tips/index", "../../amrio/tips/style.css", "../../amrio/tips/helper", "amrio/tools/index", "./error-msg", "./style.css" ], function(require, exports, module) {
+define("biz/login/index", [ "amrio/tips/index", "amrio/tips/helper", "amrio/tools/index", "./error-msg", "./style.css" ], function(require, exports, module) {
     "use strict";
-    var tips = require("../../amrio/tips/index");
+    var tips = require("amrio/tips/index");
+    require("amrio/tips/style.css");
+    require("amrio/tools/index");
     var msgs = require("./error-msg");
     require("./style.css");
     module.exports = function() {
@@ -8,10 +10,10 @@ define("biz/login/index", [ "../../amrio/tips/index", "../../amrio/tips/style.cs
     };
 });
 
-define("amrio/tips/index", [ "amrio/tips/helper", "amrio/tools/index" ], function(require, exports, module) {
+define("amrio/tips/index", [ "./style.css", "./helper", "amrio/tools/index" ], function(require, exports, module) {
     "use strict";
-    require("amrio/tips/style.css");
-    require("amrio/tips/helper");
+    require("./style.css");
+    require("./helper");
     var tools = require("amrio/tools/index");
     module.exports = {
         show: function(text) {
@@ -28,6 +30,15 @@ define("amrio/tips/helper", [], function(require, exports, module) {
     "use strict";
     module.exports = {
         helper: {}
+    };
+});
+
+define("amrio/tools/index", [], function(require, exports, module) {
+    "use strict";
+    module.exports = {
+        log: function() {
+            console.log(arguments);
+        }
     };
 });
 
