@@ -10,9 +10,9 @@ define("biz/login/index-debug", [ "amrio/tips/index-debug", "amrio/tips/helper-d
     };
 });
 
-define("amrio/tips/index-debug", [ "./style-debug.css", "./helper-debug", "amrio/tools/index-debug" ], function(require, exports, module) {
+define("amrio/tips/index-debug", [ "./helper-debug", "amrio/tools/index-debug" ], function(require, exports, module) {
     "use strict";
-    require("./style-debug.css");
+    // require('./style.css')
     require("./helper-debug");
     var tools = require("amrio/tools/index-debug");
     module.exports = {
@@ -20,10 +20,6 @@ define("amrio/tips/index-debug", [ "./style-debug.css", "./helper-debug", "amrio
             text && tools.log(text);
         }
     };
-});
-
-define("amrio/tips/style-debug.css", [], function() {
-    seajs.importStyle(".ui-tips{font-size:12px;border:1px red solid}.ui-tips-content{background-color:#fff}");
 });
 
 define("amrio/tips/helper-debug", [], function(require, exports, module) {
@@ -40,6 +36,10 @@ define("amrio/tools/index-debug", [], function(require, exports, module) {
             console.log(arguments);
         }
     };
+});
+
+define("amrio/tips/style-debug.css", [], function() {
+    seajs.importStyle(".base{color:#333}.ui-tips{font-size:12px;border:1px red solid}.ui-tips-content{background-color:#fff}");
 });
 
 define("biz/login/error-msg-debug", [], function(require, exports, module) {

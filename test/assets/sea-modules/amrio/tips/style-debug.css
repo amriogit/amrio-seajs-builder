@@ -1,4 +1,10 @@
 /*! define amrio/tips/style-debug.css */
+/*! block amrio/tips/base-debug.css */
+.base{
+    color: #333;
+}
+/*! endblock amrio/tips/base-debug.css */
+
 .ui-tips{
     font-size: 12px;
     border: 1px #f00 solid;

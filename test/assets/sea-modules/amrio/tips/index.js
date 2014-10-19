@@ -1,1 +1,27 @@
-define("amrio/tips/index",["./style.css","./helper","amrio/tools/index"],function(a,b,c){"use strict";a("./style.css"),a("./helper");var d=a("amrio/tools/index");c.exports={show:function(a){a&&d.log(a)}}}),define("amrio/tips/style.css",[],function(){seajs.importStyle(".ui-tips{font-size:12px;border:1px red solid}.ui-tips-content{background-color:#fff}")}),define("amrio/tips/helper",[],function(a,b,c){"use strict";c.exports={helper:{}}}),define("amrio/tools/index",[],function(a,b,c){"use strict";c.exports={log:function(){console.log(arguments)}}});
+define("amrio/tips/index", [ "./helper", "amrio/tools/index" ], function(require, exports, module) {
+    "use strict";
+    // require('./style.css')
+    require("./helper");
+    var tools = require("amrio/tools/index");
+    module.exports = {
+        show: function(text) {
+            text && tools.log(text);
+        }
+    };
+});
+
+define("amrio/tips/helper", [], function(require, exports, module) {
+    "use strict";
+    module.exports = {
+        helper: {}
+    };
+});
+
+define("amrio/tools/index", [], function(require, exports, module) {
+    "use strict";
+    module.exports = {
+        log: function() {
+            console.log(arguments);
+        }
+    };
+});
