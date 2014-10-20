@@ -43,19 +43,20 @@ function build(opts) {
         transportDest = path.join(options.tmp, '.transport'),
         concatDest = path.join(options.tmp, '.concat')
 
-    if(options.clean) {
+    if (options.clean) {
         asb.clean({
             src: [options.tmp]
         })
     }
-    
+
     var records = {}
 
-    void [].concat(options.src).forEach(function(src) {
+    ![].concat(options.src).forEach(function(src) {
         var isDir = fs.statSync(src).isDirectory()
         var basedir = isDir ? src : path.dirname(src)
 
-        if(!records[basedir]) {
+        if (!records[basedir]) {
+            console.log('\nBuild %s', src)
             records[basedir] = true
 
             asb.copy({
@@ -102,11 +103,13 @@ function build(opts) {
         dest: dest
     })
 
-    if(options.clean) {
+    if (options.clean) {
         asb.clean({
             src: [options.tmp]
         })
     }
+
+    console.log('\nBuild completed.')
 }
 
 module.exports = asb

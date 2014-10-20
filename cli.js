@@ -14,6 +14,12 @@ function getAlias(alias) {
     }
 }
 
+function completeSrc(inputSrc) {
+    return inputSrc.split(',').map(function(src) {
+        return fs.statSync(src).isDirectory() ? path.join(src, '**/*.*') : src
+    })
+}
+
 function getOptions() {
     var program = require('commander')
     var pkg = require('./package.json')
@@ -24,7 +30,7 @@ function getOptions() {
         .option('-d, --dest <path>', 'dest path [./sea-modules]', './sea-modules')
         .option('-i, --include <include>', 'concat include option [relative]', 'relative')
         .option('-p, --paths <path>', 'same node_modules [./sea-modules]', function(val) {
-            if(val) {
+            if (val) {
                 return val.split(',')
             } else {
                 return ['./sea-modules']
@@ -43,7 +49,7 @@ function getOptions() {
 
 function main() {
     var options = getOptions()
-    
+
     options.alias = getAlias(options.alias)
 
     asb.grunt.option('force', options.force)
