@@ -63,6 +63,11 @@ var steps = [
             clean: false,
             debug: true
         })
+        asb.clean({
+            cwd: './',
+            src: ['.tmp/.transport/amrio']
+        })
+
         asb.build({
             src: 'biz',
             minify: false,
@@ -75,13 +80,12 @@ var steps = [
         process.chdir('./assets')
 
         asb.build({
-            src: 'amrio/tips/style.css',
+            src: 'amrio/tips/index.js',
             minify: false,
             clean: false,
-            debug: true
+            debug: true,
+            test: true
         })
-        // 
-        // extraCSSDeps()
     }
 ]
 
@@ -90,22 +94,9 @@ function doStep(step) {
     steps[step] && steps[step]()
 }
 
-function extraCSSDeps() {
-    var css = require('cmd-util').css
-    var data = css.parse(asb.grunt.file.read('amrio/tips/style.css'))
-
-    var deps = data[0].code.filter(function(d) {
-        return d.type === 'import'
-    }).map(function(d) {
-        return d.id
-    })
-
-    console.log(deps)
-}
-
 // doStep(1)
 // doStep(2)
 // doStep(3)
 // doStep(4)
-doStep(5)
-// doStep(6)
+// doStep(5)
+doStep(6)

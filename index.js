@@ -36,7 +36,8 @@ function build(opts) {
         tmp: '.tmp',
         minify: true,
         debug: false,
-        clean: true
+        clean: true,
+        test: false
     }, opts)
 
     var dest = options.dest,
@@ -59,16 +60,18 @@ function build(opts) {
             console.log('\nBuild %s', src)
             records[basedir] = true
 
-            asb.copy({
-                src: isDir ? path.join(src, '**/*') : src,
-                dest: dest
-            })
+            if(!options.test) {
+                asb.copy({
+                    src: isDir ? path.join(src, '**/*') : src,
+                    dest: dest
+                })
+            }
 
             asb.transport({
                 src: path.join(basedir, '**/*.*'),
                 filter: 'isFile',
                 dest: transportDest,
-                paths: ['./'].concat(options.paths),
+                paths: ['./', transportDest].concat(options.paths),
                 alias: options.alias,
                 debug: options.debug
             })
@@ -97,11 +100,13 @@ function build(opts) {
         })
     }
 
-    asb.copy({
-        cwd: concatDest,
-        src: ['**/*.*'],
-        dest: dest
-    })
+    if(!options.test) {
+        asb.copy({
+            cwd: concatDest,
+            src: ['**/*.*'],
+            dest: dest
+        })
+    }
 
     if (options.clean) {
         asb.clean({

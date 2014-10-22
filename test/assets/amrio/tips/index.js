@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
     'use strict'
-    // require('./style.css')
+    require('./style.css')
     require('./helper')
     
     var tools = require('amrio/tools/index')

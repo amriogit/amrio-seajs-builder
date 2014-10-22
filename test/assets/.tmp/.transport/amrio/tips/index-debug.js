@@ -1,6 +1,6 @@
-define("amrio/tips/index-debug", [ "./helper-debug", "amrio/tools/index-debug" ], function(require, exports, module) {
+define("amrio/tips/index-debug", [ "./style-debug.css", "./helper-debug", "amrio/tools/index-debug" ], function(require, exports, module) {
     "use strict";
-    // require('./style.css')
+    require("./style-debug.css");
     require("./helper-debug");
     var tools = require("amrio/tools/index-debug");
     module.exports = {
