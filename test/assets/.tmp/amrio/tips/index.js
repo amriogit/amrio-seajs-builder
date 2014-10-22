@@ -1,4 +1,4 @@
-define("amrio/tips/index", [ "./style.css", "./helper", "amrio/tools/index" ], function(require, exports, module) {
+define("amrio/tips/index", [], function(require, exports, module) {
     "use strict";
     require("./style.css");
     require("./helper");
@@ -11,13 +11,21 @@ define("amrio/tips/index", [ "./style.css", "./helper", "amrio/tools/index" ], f
 });
 
 define("amrio/tips/style.css", [], function() {
-    require("amrio/tips/base.css");
-    seajs.importStyle(".ui-tips{font-size:12px;border:1px red solid}.ui-tips-content{background-color:#fff}");
+   seajs.importStyle("@import url(\"./base.css\"); .ui-tips{ font-size: 12px; border: 1px #f00 solid; } .ui-tips-content{ background-color: #fff; }")
 });
 
 define("amrio/tips/helper", [], function(require, exports, module) {
     "use strict";
     module.exports = {
         helper: {}
+    };
+});
+
+define("amrio/tools/index", [], function(require, exports, module) {
+    "use strict";
+    module.exports = {
+        log: function() {
+            console.log(arguments);
+        }
     };
 });
