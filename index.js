@@ -21,8 +21,9 @@ function color(text) {
         colors: true
     })
 }
+
 function main(opts) {
-    var cache = {},
+    var cache1 = {},
         paths = ['sea-modules']
 
     var options = {
@@ -33,51 +34,57 @@ function main(opts) {
 
     function start() {
         extend(options, opts)
-        
-        console.log('Start %s', color(options.src))
+
+        console.log('Start %s', options.src)
 
         var filespath = []
         if (fs.statSync(options.src).isFile()) {
             filespath = filespath.concat(options.src)
         } else {
-            filespath = glob.sync(path.join(options.src, '**/*.js'))
+            filespath = glob.sync(path.join(options.src, '**/*.{js,css}'))
         }
 
         if (options.paths) {
             paths = paths.concat(options.paths)
         }
 
-        var len = 0
-        filespath.forEach(function(filepath) {
+        var len = filespath.length - 1,
+            jsCount = 0
+        filespath.forEach(function(filepath, i) {
+            var realFilepath = path.join(options.dest, filepath)
+            if (path.extname(filepath) === '.css') {
+                console.log('Copy %s success.', '"' + filepath + '"')
+                writeFile(realFilepath, fs.readFileSync(filepath))
+                return
+            }
             var data = concat(filepath)
 
-            if (options.minify) {
-                data = cleanCode(data)
+            writeFile(realFilepath, data)
+            console.log('Build %s success.', '"' + filepath + '"')
+
+            jsCount++
+            if (len === i) {
+                console.log('Builded %s files.', jsCount)
             }
-
-            filepath = path.join(options.dest, filepath)
-            mkdirp(path.dirname(filepath), function(err) {
-                if(err) throw err
-                fs.writeFile(filepath, data)
-                console.log('Build %s success.', '"' + filepath + '"')
-
-                if(++len === filespath.length) {
-                    console.log('Builded.')
-                }
-            })
         })
     }
 
+    function writeFile(filepath, data) {
+        mkdirp.sync(path.dirname(filepath))
+        fs.writeFileSync(filepath, data)
+    }
+
     function concat(filepath) {
-        if (cache[id]) {
-            return cache[id]
+        var id = filepath.replace(/\.js$/, '')
+
+        if (hitCache(id)) {
+            return hitCache(id)
         }
 
         if (!fs.existsSync(filepath)) {
             return ''
         }
 
-        var id = filepath.replace(/\.js$/, '')
         var data = fs.readFileSync(filepath).toString()
         var ast = cmd.ast.getAst(data)
         var deps = getModuleDeps(ast, path.dirname(id))
@@ -88,12 +95,13 @@ function main(opts) {
         })
 
         var result = ast.print_to_string()
+        result = cleanCode(result)
 
         if (deps.files.length) {
             result += '\n' + deps.files.join('\n')
         }
 
-        cache[id] = result
+        main.cache[id] = result
 
         return result
     }
@@ -127,7 +135,7 @@ function main(opts) {
                     remain[dep] = true
                 } else {
                     if (!records[dep]) {
-                        files[dep] = file
+                        files[dep] = cleanCode(file)
                         updateRecords(file)
                     }
                 }
@@ -152,13 +160,15 @@ function main(opts) {
         result.files = Object.keys(files).map(function(k) {
             return files[k]
         })
-
         result.remain = Object.keys(remain)
 
         return result
     }
 
     function getFile(id, base) {
+        if (hitCache(id)) {
+            return hitCache(id)
+        }
         var ext = path.extname(id),
             filepath
 
@@ -168,6 +178,9 @@ function main(opts) {
 
         if (id.charAt(0) === '.') {
             filepath = cmd.iduri.normalize(path.join(base, id))
+            if (hitCache(filepath)) {
+                return hitCache(filepath)
+            }
             if (ext === '.css') {
                 return css2js(filepath)
             }
@@ -208,10 +221,10 @@ function main(opts) {
             return ''
         }
         var tpl = [
-            'define("%s", [], function() {',
-            '   seajs.importStyle(%s)',
-            '});'
-        ].join('\n')
+            'define("%s", [], function() { ',
+            'seajs.importStyle(%s)',
+            ' });'
+        ].join('')
 
         var code = fs.readFileSync(id).toString()
         code = util.format(tpl, id, JSON.stringify(code).replace(/(\s|\\n|\\r)+/g, ' '))
@@ -219,6 +232,9 @@ function main(opts) {
     }
 
     function cleanCode(code) {
+        if (!options.minify) {
+            return code
+        }
         var ast = UglifyJS.parse(code)
         ast.figure_out_scope()
         var compressor = UglifyJS.Compressor({
@@ -234,21 +250,30 @@ function main(opts) {
     start()
 }
 
+function hitCache(id) {
+    var cache = main.cache[id]
+    if (cache) {
+        console.log('Hit cache %s.', '"' + id + '"')
+    }
+    return false
+}
+
 function test() {
     process.chdir('test/assets/')
 
     main({
         src: 'amrio',
-        dest: '.tmp',
-        paths: ['./']
+        dest: '.tmp'
     })
 
     main({
         src: 'biz',
         dest: '.tmp',
-        paths: ['.tmp', './']
+        paths: ['.tmp'],
+        all: true
     })
 }
 
-// test()
+main.cache = {}
 module.exports = main
+// test()
