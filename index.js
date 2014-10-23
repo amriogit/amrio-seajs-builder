@@ -1,17 +1,41 @@
+'use strict'
+
 var fs = require('fs'),
     path = require('path'),
     util = require('util')
 
 var glob = require('glob')
 var cmd = require('cmd-util')
-var grunt = require('grunt')
-var UglifyJS = cmd.UglifyJS
+var UglifyJS = require('uglify-js')
+var mkdirp = require('mkdirp')
 
-function main(options) {
+function extend(dest, src) {
+    Object.keys(src).map(function(k) {
+        dest[k] = src[k]
+    })
+    return dest
+}
+
+function color(text) {
+    return util.inspect(text, {
+        colors: true
+    })
+}
+function main(opts) {
     var cache = {},
         paths = ['sea-modules']
 
-    function start(options) {
+    var options = {
+        minify: true,
+        all: false,
+        dest: 'sea-modules'
+    }
+
+    function start() {
+        extend(options, opts)
+        
+        console.log('Start %s', color(options.src))
+
         var filespath = []
         if (fs.statSync(options.src).isFile()) {
             filespath = filespath.concat(options.src)
@@ -19,15 +43,28 @@ function main(options) {
             filespath = glob.sync(path.join(options.src, '**/*.js'))
         }
 
-        if(options.paths) {
+        if (options.paths) {
             paths = paths.concat(options.paths)
         }
 
+        var len = 0
         filespath.forEach(function(filepath) {
             var data = concat(filepath)
-            data = cleanCode(data)
-            grunt.file.write(path.join(options.dest, filepath), data)
-            console.log('Build %s success.', ('"' + filepath + '"').cyan)
+
+            if (options.minify) {
+                data = cleanCode(data)
+            }
+
+            filepath = path.join(options.dest, filepath)
+            mkdirp(path.dirname(filepath), function(err) {
+                if(err) throw err
+                fs.writeFile(filepath, data)
+                console.log('Build %s success.', '"' + filepath + '"')
+
+                if(++len === filespath.length) {
+                    console.log('Builded.')
+                }
+            })
         })
     }
 
@@ -43,7 +80,7 @@ function main(options) {
         var id = filepath.replace(/\.js$/, '')
         var data = fs.readFileSync(filepath).toString()
         var ast = cmd.ast.getAst(data)
-        var deps = getModuleAllDeps(ast, path.dirname(id))
+        var deps = getModuleDeps(ast, path.dirname(id))
 
         ast = cmd.ast.modify(ast, {
             id: id,
@@ -53,7 +90,7 @@ function main(options) {
         var result = ast.print_to_string()
 
         if (deps.files.length) {
-            result += '\n\n' + deps.files.join('\n\n')
+            result += '\n' + deps.files.join('\n')
         }
 
         cache[id] = result
@@ -61,7 +98,7 @@ function main(options) {
         return result
     }
 
-    function getModuleAllDeps(ast, base) {
+    function getModuleDeps(ast, base) {
         ast = cmd.ast.getAst(ast)
 
         var records = {}
@@ -76,28 +113,47 @@ function main(options) {
             return result
         }
 
+        var files = {},
+            remain = {}
+
         meta.dependencies.forEach(function(dep) {
-            if (result.remain.indexOf(dep) === -1) {
+            if (!options.all && dep.charAt(0) !== '.') {
+                remain[dep] = true
+                return
+            }
+            if (!remain[dep]) {
                 var file = getFile(dep, base)
                 if (file === undefined) {
-                    result.remain.push(dep)
+                    remain[dep] = true
                 } else {
                     if (!records[dep]) {
-                        result.remain = grunt.util._.union(result.remain, getModuleAllDeps(file, dep).remain)
+                        files[dep] = file
                         updateRecords(file)
-                        result.files.push(file)
                     }
                 }
             } else {
-                result.remain.push(dep)
+                delete remain[dep]
             }
         })
 
         function updateRecords(file) {
-            cmd.ast.parse(file).forEach(function(m) {
+            cmd.ast.parse(file).forEach(function(m, i) {
                 records[m.id] = true
+                m.dependencies.forEach(function(dep) {
+                    remain[dep] = true
+                })
+                if (i > 0) {
+                    delete remain[m.id]
+                    delete files[m.id]
+                }
             })
         }
+
+        result.files = Object.keys(files).map(function(k) {
+            return files[k]
+        })
+
+        result.remain = Object.keys(remain)
 
         return result
     }
@@ -117,7 +173,7 @@ function main(options) {
             }
             return concat(filepath)
         } else {
-            filepath = getAvailableFilePath(id)
+            filepath = getAvailablePath(id)
             if (!filepath) {
                 return
             }
@@ -128,7 +184,7 @@ function main(options) {
         }
     }
 
-    function getAvailableFilePath(id) {
+    function getAvailablePath(id) {
         var result = null
         if (path.dirname(id) === '.') {
             return null
@@ -141,14 +197,14 @@ function main(options) {
         })
 
         if (!has) {
-            console.log('Can\'t find top-level ID %s', ('"' + id + '"').cyan)
+            console.log('Can\'t find top-level ID %s', color(id))
         }
 
         return result
     }
 
     function css2js(id) {
-        if(!fs.existsSync(id)) {
+        if (!fs.existsSync(id)) {
             return ''
         }
         var tpl = [
@@ -175,7 +231,7 @@ function main(options) {
         return ast.print_to_string()
     }
 
-    start(options)
+    start()
 }
 
 function test() {

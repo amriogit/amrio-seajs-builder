@@ -14,14 +14,11 @@
   },
   "license": "MIT",
   "dependencies": {
+    "cmd-util": "^0.3.13",
     "commander": "^2.3.0",
-    "grunt": "~0.4.2",
-    "grunt-cmd-concat": "~0.2.7",
-    "grunt-cmd-transport": "~0.4.1",
-    "grunt-contrib-clean": "~0.5.0",
-    "grunt-contrib-copy": "~0.5.0",
-    "grunt-contrib-cssmin": "~0.7.0",
-    "grunt-contrib-uglify": "~0.2.7"
+    "glob": "^4.0.6",
+    "mkdirp": "^0.5.0",
+    "uglify-js": "^2.4.15"
   },
   "repository": {
     "type": "git",

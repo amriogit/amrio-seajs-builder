@@ -1,5 +1,8 @@
 define(function(require, exports, module) {
     'use strict'
+    var $ = require('$')
+    var bootstrap = require('bootstrap')
+    
     require('./style.css')
     require('./helper')
     

@@ -1,8 +1,10 @@
 define(function(require, exports, module) {
     'use strict'
 
-    var tips = require('amrio/tips/index')
+    var $ = require('$')
+    var angular = require('angular')
     require('amrio/tips/style.css')
+    var tips = require('amrio/tips/index')
     require('amrio/tools/index')
 
     var msgs = require('./error-msg')
