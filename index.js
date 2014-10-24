@@ -38,7 +38,7 @@ function main(opts) {
         console.log('Start %s', options.src)
 
         var filespath = []
-        if (fs.statSync(options.src).isFile()) {
+        if (fs.statSync(cmd.iduri.appendext(options.src)).isFile()) {
             filespath = filespath.concat(options.src)
         } else {
             filespath = glob.sync(path.join(options.src, '**/*.{js,css}'))
@@ -77,8 +77,9 @@ function main(opts) {
     function concat(filepath) {
         var id = filepath.replace(/\.js$/, '')
 
-        if (hitCache(id)) {
-            return hitCache(id)
+        var cacheFile = hitCache(id)
+        if (cacheFile) {
+            return cacheFile
         }
 
         if (!fs.existsSync(filepath)) {
@@ -139,8 +140,6 @@ function main(opts) {
                         updateRecords(file)
                     }
                 }
-            } else {
-                delete remain[dep]
             }
         })
 
@@ -149,6 +148,14 @@ function main(opts) {
                 records[m.id] = true
                 m.dependencies.forEach(function(dep) {
                     remain[dep] = true
+                    if (options.all) {
+                        var file = getFile(dep)
+                        if (file) {
+                            files[dep] = file
+                            records[dep] = true
+                            delete remain[dep]
+                        }
+                    }
                 })
                 if (i > 0) {
                     delete remain[m.id]
@@ -166,9 +173,7 @@ function main(opts) {
     }
 
     function getFile(id, base) {
-        if (hitCache(id)) {
-            return hitCache(id)
-        }
+        var cacheFile
         var ext = path.extname(id),
             filepath
 
@@ -178,14 +183,17 @@ function main(opts) {
 
         if (id.charAt(0) === '.') {
             filepath = cmd.iduri.normalize(path.join(base, id))
-            if (hitCache(filepath)) {
-                return hitCache(filepath)
+            if (cacheFile = hitCache(id)) {
+                return cacheFile
             }
             if (ext === '.css') {
                 return css2js(filepath)
             }
             return concat(filepath)
         } else {
+            if (cacheFile = hitCache(id)) {
+                return cacheFile
+            }
             filepath = getAvailablePath(id)
             if (!filepath) {
                 return
@@ -253,21 +261,21 @@ function main(opts) {
 function hitCache(id) {
     var cache = main.cache[id]
     if (cache) {
-        console.log('Hit cache %s.', '"' + id + '"')
+        console.log('Hit %s.', '"' + id + '"')
     }
-    return false
+    return cache
 }
 
 function test() {
     process.chdir('test/assets/')
 
-    main({
-        src: 'amrio',
-        dest: '.tmp'
-    })
+    // main({
+    //     src: 'amrio',
+    //     dest: '.tmp'
+    // })
 
     main({
-        src: 'biz',
+        src: 'biz/login/index.js',
         dest: '.tmp',
         paths: ['.tmp'],
         all: true
@@ -276,4 +284,4 @@ function test() {
 
 main.cache = {}
 module.exports = main
-// test()
+    // test()
