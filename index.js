@@ -38,7 +38,7 @@ function main(opts) {
         console.log('Start %s', options.src)
 
         var filespath = []
-        if (fs.statSync(cmd.iduri.appendext(options.src)).isFile()) {
+        if (fs.statSync(options.src).isFile()) {
             filespath = filespath.concat(options.src)
         } else {
             filespath = glob.sync(path.join(options.src, '**/*.{js,css}'))
