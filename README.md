@@ -21,28 +21,28 @@ amrio-seajs-builder 是一个合并前端 **CMD** 模块的工具，目前只是
 非常感谢 [__seajs__](http://seajs.org) 和它配套的自定义构建工具
 
 ## 安装 amrio-seajs-builder
-此模块需要全局安装，以便使用全局命令 asb
+此模块需要全局安装，以便使用全局命令 `asb`
 ```
 npm install -g amrio-seajs-builder
 ```
 
 ## 使用
-使用 npm 全局安装完毕后，可以在命令行中使用：asb -h 查看该命令的帮助信息，
+使用 npm 全局安装完毕后，可以在命令行中使用：`asb -h` 查看该命令的帮助信息，
 如果报错，请重新全局安装，直到命令行中 asb 命令可用
 
 ### 参数
 `-s, --src <path> `构建路径，必填项！  
 `-d, --dest <path> `部署路径 默认值：`./sea-modules`  
-`-p, --paths <path>` `paths` 路径，和 `node_modules`的作用一样 默认值：`./sea-modules`  
-`-all`, 构建所有范围的模块范围，默认只构建相对模块  
+`-p, --paths <path>` 顶级模块查找的基础 `paths` 路径，和 `node_modules`的作用一样 默认值：`./sea-modules`  
+`-all` 构建模块范围，默认只构建相对模块，指定此参数后顶级模块和相对模块都会被合并进来  
 
 ### 常规用法
 ```
 asb -s amrio
 ```  
-`-s` 参数是指定构建源文件/文件夹的路径，这条命令会找到当前执行 `abs` 目录下的 `./amrio` 文件夹，   
-并且把里面 `(.js, .css)` 模块文件使用 (默认值：`relative`) 的构建范围进行构建。   
-最后构建至当前执行目录下的 `./sea-modules(默认值)` 文件夹里面，   
+`-s` 参数是指定构建源文件/文件夹的路径，这条命令会尝试找到当前执行 `abs` 命令目录下的 `./amrio` 文件夹，   
+并且把里面 `.js, .css` 模块文件使用默认构建范围（相对模块）进行构建。   
+最后构建至默认部署路径 `./sea-modules` 文件夹里面，   
 构建完毕后会在 `sea-modules` 目录下生成 `amrio/**.{js,css}` 文件
 
 #### 常规构建
@@ -59,7 +59,7 @@ asb -s amrio,biz/mix/validation.js
 asb -s amrio -d ../../custom --all
 ```
 
-#### 使用 -p 指定构建时文件合并的基础查找路径，和 nodejs 的 node_modules 功能相同，多个 paths 使用 “,” 分开
+#### 使用 -p 指定构建时文件合并的基础查找路径，和 nodejs 的 node_modules 功能类似，多个 paths 使用 “,” 分开
 ```
 asb -s amrio -p ../../myLib,my-module,../sea-modules
 ```
