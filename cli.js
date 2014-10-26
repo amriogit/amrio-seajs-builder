@@ -3,7 +3,7 @@
 var path = require('path'),
     fs = require('fs'),
     util = require('util')
-var asb = require('./')
+var builder = require('./')
 
 function getAlias(alias) {
     var exists = fs.existsSync(alias)
@@ -26,7 +26,6 @@ function getOptions() {
     program.version(pkg.version)
         .option('-s, --src <path>', 'src path required')
         .option('-d, --dest <path>', 'dest path [./sea-modules]', './sea-modules')
-        .option('-i, --include <include>', 'concat include option [relative]', 'relative')
         .option('-p, --paths <path>', 'same node_modules [./sea-modules]', function(val) {
             if (val) {
                 return val.split(',')
@@ -34,7 +33,8 @@ function getOptions() {
                 return ['./sea-modules']
             }
         })
-        .option('-a, --alias <path>', 'alias config file path [./alias.json]', './alias.json')
+        // .option('-a, --alias <path>', 'alias config file path [./alias.json]', './alias.json')
+        .option('--all', 'concat include all scope')
         .option('--force', 'force')
         .option('--no-minify', 'disabled minify')
         .parse(process.argv)
@@ -47,12 +47,22 @@ function getOptions() {
 
 function main() {
     var options = getOptions()
-    options.alias = getAlias(options.alias)
-    asb({
+    // options.alias = getAlias(options.alias)
+
+    options.paths || (options.paths = ['sea-modules'])
+    options.all || (options.all = false)
+    console.log('Build options:')
+    console.log('src: %s', options.src)
+    console.log('dest: %s', options.dest)
+    console.log('paths: %s', options.paths)
+    console.log('all: %s\n', options.all)
+
+    console.log(typeof options.all)
+    builder({
         src: options.src,
         dest: options.dest,
-        paths: options.paths || [],
-        all: options.include === 'all' ? true : false
+        paths: options.paths,
+        all: options.all
     })
 }
 
