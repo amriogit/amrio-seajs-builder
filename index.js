@@ -22,230 +22,228 @@ function color(text) {
     })
 }
 
-var cache = {}
-Builder.cache = cache
+function main(opts) {
+    var cache1 = {},
+        paths = ['sea-modules']
 
-function Builder(options) {
-    var defaults = {
+    var options = {
+        minify: true,
         all: false,
-        paths: ['sea-modules'],
-        dest: 'sea-modules',
-        minify: true
+        dest: 'sea-modules'
     }
-    this.options = extend(defaults, options)
-    this.start()
-}
 
-extend(Builder.prototype, {
-    moduleCache: function(id, module) {
-        if (module !== undefined) {
-            cache[id] = module
-            return module
-        } else {
-            module = cache[id]
-            module && console.log('Hit %s', id)
-            return module
-        }
-    },
-    start: function() {
-        console.log('Starting...')
-        var self = this
+    function start() {
+        extend(options, opts)
+
+        console.log('Start %s', options.src)
+
         var filespath = []
-        if (fs.statSync(self.options.src).isFile()) {
-            filespath = filespath.concat(self.options.src)
+        if (fs.statSync(options.src).isFile()) {
+            filespath = filespath.concat(options.src)
         } else {
-            filespath = glob.sync(path.join(self.options.src, '**/*.{js,css}'))
+            filespath = glob.sync(path.join(options.src, '**/*.{js,css}'))
         }
-        filespath.forEach(function(uri) {
-            var module = null
-            if (path.extname(uri) === '.css') {
-                module = fs.readFileSync(uri)
-            } else {
-                module = self.concatModule(uri)
-            }
 
-            if (module) {
-                self.saveFile(uri, module)
+        if (options.paths) {
+            paths = paths.concat(options.paths)
+        }
+
+        var len = filespath.length - 1,
+            jsCount = 0
+        filespath.forEach(function(filepath, i) {
+            var realFilepath = path.join(options.dest, filepath)
+            if (path.extname(filepath) === '.css') {
+                console.log('Copy %s success.', '"' + filepath + '"')
+                writeFile(realFilepath, fs.readFileSync(filepath))
+                return
+            }
+            var data = concat(filepath)
+
+            writeFile(realFilepath, data)
+            console.log('Build %s success.', '"' + filepath + '"')
+
+            jsCount++
+            if (len === i) {
+                console.log('Builded %s files.', jsCount)
             }
         })
-    },
-    concatModule: function(uri, modulePaths) {
-        var module = this.getModule(uri, modulePaths)
+    }
 
-        if (!module) {
-            return module
+    function writeFile(filepath, data) {
+        mkdirp.sync(path.dirname(filepath))
+        fs.writeFileSync(filepath, data)
+    }
+
+    function concat(filepath) {
+        var id = filepath.replace(/\.js$/, '')
+
+        var cacheFile = hitCache(id)
+        if (cacheFile) {
+            return cacheFile
         }
 
-        var ast = cmd.ast.getAst(module)
+        if (!fs.existsSync(filepath)) {
+            return ''
+        }
+
+        var data = fs.readFileSync(filepath).toString()
+        var ast = cmd.ast.getAst(data)
+        var deps = getModuleDeps(ast, path.dirname(id))
+
+        ast = cmd.ast.modify(ast, {
+            id: id,
+            dependencies: deps.remain
+        })
+
+        var result = ast.print_to_string()
+        result = cleanCode(result)
+
+        if (deps.files.length) {
+            result += '\n' + deps.files.join('\n')
+        }
+
+        main.cache[id] = result
+
+        return result
+    }
+
+    function getModuleDeps(ast, base) {
+        ast = cmd.ast.getAst(ast)
+
+        var records = {}
+        var result = {
+            remain: [],
+            files: []
+        }
+
         var meta = cmd.ast.parseFirst(ast)
 
         if (!meta) {
-            return
+            return result
         }
 
-        if (meta.id) {
-            return module
-        }
+        var files = {},
+            remain = {}
 
-        meta.id = uri.replace(/\.js$/, '')
-        var deps = this.resolveDependencies(meta)
-
-        module += ';' + Object.keys(deps.files).map(function(id) {
-            return deps.files[id]
-        }).join('')
-
-        return this.cleanModule(meta.id, deps.remains, module)
-    },
-    cleanModule: function(id, remains, module) {
-        var ast = cmd.ast.getAst(module)
-
-        function anonymousModule(node) {
-            if (node.args.length === 1) {
-                node.args[2] = node.args[0]
-                node.args[0] = new UglifyJS.AST_String({
-                    value: id
-                })
-                node.args[1] = new UglifyJS.AST_Array({
-                    elements: Object.keys(remains).map(function(id) {
-                        return new UglifyJS.AST_String({
-                            value: id
-                        })
-                    })
-                })
-            }
-        }
-
-        function cleanOtherDeps(node) {
-            if (node.args.length === 3 && node.args[1] instanceof UglifyJS.AST_Array) {
-                var elements = node.args[1].elements
-                elements.forEach(function(element) {
-                    remains[element.value] = true
-                })
-                node.args[1].elements = []
-            }
-        }
-
-        var has = {},
-            semicolon = new UglifyJS.AST_EmptyStatement()
-
-        function duplicateModule(node) {
-            if (node.args.length === 3) {
-                var id = node.args[0].value
-                delete remains[id]
-                if (has[id]) {
-                    return semicolon
-                }
-                has[id] = true
-                return node
-            }
-        }
-
-        ast = ast.transform(new UglifyJS.TreeTransformer(function(node) {
-            if (node instanceof UglifyJS.AST_Call && node.expression.name === 'define' && node.args.length) {
-                cleanOtherDeps(node)
-                return duplicateModule(node)
-            }
-        }))
-
-        ast = ast.transform(new UglifyJS.TreeTransformer(function(node) {
-            if (node instanceof UglifyJS.AST_Call && node.expression.name === 'define' && node.args.length) {
-                anonymousModule(node)
-            }
-        }))
-
-        return this.uglify(ast)
-    },
-    resolveDependencies: function(meta) {
-        var self = this
-        var result = {
-            remains: {},
-            files: {}
-        }
-
-        meta.dependencies.forEach(function(id) {
-            var isAbs = self.isAbsId(id)
-
-            if (isAbs && !self.options.all) {
-                result.remains[id] = true
+        meta.dependencies.forEach(function(dep) {
+            if (!options.all && dep.charAt(0) !== '.') {
+                remain[dep] = true
                 return
             }
-
-            var uri = cmd.iduri.absolute(meta.id, id)
-            var module = self.concatModule(uri, isAbs ? self.options.paths : null)
-
-            if (module) {
-                result.files[uri] = module
-            } else {
-                result.remains[uri] = true
+            if (!remain[dep]) {
+                var file = getFile(dep, base)
+                if (file === undefined) {
+                    remain[dep] = true
+                } else {
+                    if (!records[dep]) {
+                        files[dep] = cleanCode(file)
+                        updateRecords(file)
+                    }
+                }
             }
         })
 
-        return result
-    },
-    isAbsId: function(id) {
-        return id.charAt(0) !== '.'
-    },
-    getModule: function(id, modulePaths) {
-        var self = this
-        var module = null,
-            uri = cmd.iduri.appendext(id)
-
-        module = this.moduleCache(id)
-        if (module !== undefined) {
-            if(module === null) {
-                console.log('Null module ' + id)
-            }
-            return module
-        }
-        if (modulePaths) {
-            modulePaths.some(function(basepath) {
-                return module = self.getFile(uri, basepath)
+        function updateRecords(file) {
+            cmd.ast.parse(file).forEach(function(m, i) {
+                records[m.id] = true
+                m.dependencies.forEach(function(dep) {
+                    remain[dep] = true
+                    if (options.all) {
+                        var file = getFile(dep)
+                        if (file) {
+                            files[dep] = file
+                            records[dep] = true
+                            delete remain[dep]
+                        }
+                    }
+                })
+                if (i > 0) {
+                    delete remain[m.id]
+                    delete files[m.id]
+                }
             })
-        } else {
-            module = this.getFile(uri)
         }
 
-        this.moduleCache(id, module)
-        return module
-    },
-    saveFile: function(filepath, file) {
-        var realpath = path.join(this.options.dest, filepath)
-        mkdirp.sync(path.dirname(realpath))
-        fs.writeFileSync(realpath, file)
-        console.log('Saved %s ok.', filepath)
-    },
-    getFile: function(filepath, basepath) {
-        var extname = path.extname(filepath)
+        result.files = Object.keys(files).map(function(k) {
+            return files[k]
+        })
+        result.remain = Object.keys(remain)
 
-        if (!/\.(js|css)$/.test(extname)) {
-            filepath += '.js'
+        return result
+    }
+
+    function getFile(id, base) {
+        var cacheFile
+        var ext = path.extname(id),
+            filepath
+
+        if (!ext || ext !== '.css') {
+            id += '.js'
         }
 
-        var realpath = path.join(basepath || './', filepath)
-
-        if (fs.existsSync(realpath)) {
-            var file = fs.readFileSync(realpath).toString()
-            return path.extname(realpath) === '.css' ? this.css2js(filepath, file) : file
+        if (id.charAt(0) === '.') {
+            filepath = cmd.iduri.normalize(path.join(base, id))
+            if (cacheFile = hitCache(id)) {
+                return cacheFile
+            }
+            if (ext === '.css') {
+                return css2js(filepath)
+            }
+            return concat(filepath)
         } else {
-            console.log('Not found %s', realpath)
+            if (cacheFile = hitCache(id)) {
+                return cacheFile
+            }
+            filepath = getAvailablePath(id)
+            if (!filepath) {
+                return
+            }
+            if (ext === '.css') {
+                return css2js(filepath)
+            }
+            return fs.readFileSync(filepath).toString()
+        }
+    }
+
+    function getAvailablePath(id) {
+        var result = null
+        if (path.dirname(id) === '.') {
             return null
         }
-    },
-    css2js: function(id, file) {
+        var has = paths.some(function(modulesPath) {
+            var filepath = path.join(modulesPath, id)
+            var exists = fs.existsSync(filepath)
+            exists && (result = cmd.iduri.normalize(filepath))
+            return exists
+        })
+
+        if (!has) {
+            console.log('Can\'t find top-level ID %s', color(id))
+        }
+
+        return result
+    }
+
+    function css2js(id) {
+        if (!fs.existsSync(id)) {
+            return ''
+        }
         var tpl = [
             'define("%s", [], function() { ',
             'seajs.importStyle(%s)',
             ' });'
         ].join('')
-        file = util.format(tpl, id, JSON.stringify(file).replace(/(\s|\\n|\\r)+/g, ' '))
-        return file || null
-    },
-    uglify: function(ast) {
-        if (!this.options.minify) {
-            return ast.print_to_string({
-                beautify: true
-            })
+
+        var code = fs.readFileSync(id).toString()
+        code = util.format(tpl, id, JSON.stringify(code).replace(/(\s|\\n|\\r)+/g, ' '))
+        return code
+    }
+
+    function cleanCode(code) {
+        if (!options.minify) {
+            return code
         }
+        var ast = UglifyJS.parse(code)
         ast.figure_out_scope()
         var compressor = UglifyJS.Compressor({
             warnings: false
@@ -256,8 +254,34 @@ extend(Builder.prototype, {
         ast.mangle_names()
         return ast.print_to_string()
     }
-})
 
-module.exports = function(options) {
-    return new Builder(options)
+    start()
 }
+
+function hitCache(id) {
+    var cache = main.cache[id]
+    if (cache) {
+        console.log('Hit %s.', '"' + id + '"')
+    }
+    return cache
+}
+
+function test() {
+    process.chdir('test/assets/')
+
+    // main({
+    //     src: 'amrio',
+    //     dest: '.tmp'
+    // })
+
+    main({
+        src: 'biz/login/index.js',
+        dest: '.tmp',
+        paths: ['.tmp'],
+        all: true
+    })
+}
+
+main.cache = {}
+module.exports = main
+    // test()

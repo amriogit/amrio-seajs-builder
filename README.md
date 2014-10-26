@@ -1,23 +1,13 @@
 # amrio-seajs-builder
-amrio-seajs-builder 是一个合并前端 **CMD** 模块的工具，目前只是用来和 seajs 配套使用。   
-
-这个项目没有使用 [grunt-cmd-transport](https://www.npmjs.org/package/grunt-cmd-transport) 
-和 
- [grunt-cmd-concat](https://www.npmjs.org/package/grunt-cmd-concat) 进行自定义构建,   
-而是使用了 [cmd-util](https://www.npmjs.org/package/cmd-util) 这个更为灵活的构建工具。   
-   
-   
-##### 这个模块与上面构建方案的不同之处：  
-
-* transport 和 concat 过程没有分离，采用线性查找所有依赖，然后合并进来，避免产生无用文件   
-
-* 分析文件合并后的 AST，置空其它依赖模块的依赖数组，把这些依赖数组去重后只放入入口模块的依赖数组里，进一步减小文件后合并大小   
-
-* 分析文件合并后的 AST 并删除重复的模块，   
-重复`define(id, deps, factory)`的模块用`;`号代替掉了，如果不是使用`define`严格包裹的模块可能会发生错误，因为只是简单的把`define(id, deps, factory)`变成空语句`;`   
-
-* 采用了缓存策略，提升 transport，concat 的性能   
+[amrio-seajs-builder](https://github.com/amriogit/amrio-seajs-builder) 是一个 [__seajs__](http://seajs.org/docs/) 模块构建命令工具，使用 grunt 作为基础，采用seajs 官方
+推荐的 [grunt-cmd-transport](https://npmjs.org/package/grunt-cmd-transport)，
+[grunt-cmd-concat](https://npmjs.org/package/grunt-cmd-concat) 构建模块进行构建。  
+此模块的目的是为了进行更好的自定义构建，提供转换，合并，压缩 js、css 的整合功能，  
+提供了命令参数进行更好的自定义构建，方便没有使用 spm 标准构建的项目进行自定义构建  
+此模块要求使用者有一定的 seajs 构建经验，里面有些选项是 seajs 构建工具中的选项，可以作为此模块的文档补充
  
+__此模块目前只有本人在使用而已，不保证能满足你的需求！__
+
 非常感谢 [__seajs__](http://seajs.org) 和它配套的自定义构建工具
 
 ## 安装 amrio-seajs-builder
@@ -31,50 +21,50 @@ npm install -g amrio-seajs-builder
 如果报错，请重新全局安装，直到命令行中 asb 命令可用
 
 ### 参数
-`-s, --src <path> `构建路径，必填项！  
-`-d, --dest <path> `部署路径 默认值：`./sea-modules`  
-`-p, --paths <path>` `paths` 路径，和 `node_modules`的作用一样 默认值：`./sea-modules`  
-`-all`, 构建所有范围的模块范围，默认只构建相对模块  
+-b, --build <path> 构建路径，必填项！  
+-d, --dist <path> 部署路径 默认值：./sea-modules  
+-i, --include <include> 构建包含范围 默认值：relative  
+-p, --paths <path> paths 路径 默认值：./sea-modules  
+-a, --alias <path> alias 别名文件路径 默认值：./package.json  
+--force 强制执行  
 
 ### 常规用法
 ```
-asb -s amrio
+asb -b amrio
 ```  
-`-s` 参数是指定构建源文件/文件夹的路径，这条命令会找到当前执行 `abs` 目录下的 `./amrio` 文件夹，   
-并且把里面 `(.js, .css)` 模块文件使用 (默认值：`relative`) 的构建范围进行构建。   
-最后构建至当前执行目录下的 `./sea-modules(默认值)` 文件夹里面，   
-构建完毕后会在 `sea-modules` 目录下生成 `amrio/**.{js,css}` 文件
+-b 参数是指定构建源文件/文件夹的路径，这条命令会找到当前执行 abs 目录下的 ./amrio 文件夹，  
+并且把里面所有的可以构建的模块文件使用 (默认值：relative) 的构建范围，  
+构建至当前执行目录下的 ./sea-modules(默认值) 文件夹里面，构建完毕后会在 sea-modules 目录下生成 amrio/** 文件
 
-#### 常规构建
+##### 常规构建
 ```
-asb -s amrio
+asb -b amrio
 ```
-#### 构建指定文件/文件夹，多个需要用 “,” 分开
+##### 构建指定文件/文件夹，多个需要用 “,” 分开
 ```
-asb -s amrio,biz/mix/validation.js
-```
-
-#### 使用 all 构建范围构建到指定目录
-```
-asb -s amrio -d ../../custom --all
+asb -b amrio,biz/mix/validation.js
 ```
 
-#### 使用 -p 指定构建时文件合并的基础查找路径，和 nodejs 的 node_modules 功能相同，多个 paths 使用 “,” 分开
+##### 使用 all 构建范围构建到指定目录
 ```
-asb -s amrio -p ../../myLib,my-module,../sea-modules
+asb -b amrio -d custom -i all
 ```
 
-### nodejs API
-```js
-var builder = require('amrio-seajs-builder')
+##### 使用 -p 指定构建时文件合并的基础查找路径，和 nodejs 的 node_modules 功能相同，多个 paths 使用 “,” 分开
+```
+asb -b amrio -p ../../myLib,sea-modules
+```
 
-builder({
-    src: 'amrio',
-    dest: './sea-modules',
-    paths: ['../my-modules', 'sea-modules', 'lib'],
-    all: true,
-    minify: false
-})
+##### 使用 -a 指定构建时使用的 alias 文件，默认值是当前目录下的 ./package.json
+```
+asb -b amrio -i ../myAlias.json
+
+../myAlias.json 文件格式
+
+{
+    "jquery": "amrio/jqeury/jquery",
+    "$": "amrio/jqeury/jquery"
+}
 ```
 
 ## 联系

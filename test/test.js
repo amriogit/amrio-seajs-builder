@@ -1,30 +1,102 @@
-var fs = require('fs'),
-    assert = require('assert')
+var asb = require('../')
 
-var builder = require('../')
+var steps = [
 
-process.chdir('test/assets')
+    function() {
+        asb.clean({
+            cwd: './',
+            src: ['transport', 'concat']
+        })
 
-describe('builder', function() {
-    it('builder relative', function() {
-        builder({
+        asb.transport({
+            cwd: 'assets',
+            src: '{amrio,biz}/**/*.*',
+            dest: 'transport',
+            paths: ['assets']
+        })
+    },
+    function() {
+        asb.concat({
+            cwd: 'transport',
+            src: 'amrio/**/*.*',
+            dest: 'concat',
+            paths: ['transport', 'concat']
+        })
+    },
+    function() {
+
+        asb.clean({
+            cwd: './',
+            src: ['transport/amrio']
+        })
+
+        asb.concat({
+            cwd: 'transport',
+            src: 'biz/**/*.*',
+            dest: 'concat',
+            paths: ['transport', 'concat'],
+            include: 'all'
+        })
+    },
+    function() {
+        process.chdir('./assets')
+        asb.build({
             src: 'amrio',
-            all: false,
-            minify: false
+            minify: false,
+            clean: false,
+            debug: true
         })
-        var expected = fs.readFileSync('amrio/tips/index.js.expected').toString()
-        var actual = fs.readFileSync('sea-modules/amrio/tips/index.js').toString()
-        assert.strictEqual(actual, expected)
-    })
+        asb.build({
+            src: 'biz',
+            minify: false,
+            include: 'all',
+            clean: false,
+            debug: true
+        })
+    },
+    function() {
+        process.chdir('./assets')
 
-    it('builder all', function() {
-        builder({
-            src: 'biz/login/index.js',
-            all: true,
-            minify: false
+        asb.build({
+            src: 'amrio',
+            minify: false,
+            clean: false,
+            debug: true
         })
-        var expected = fs.readFileSync('biz/login/index.js.expected').toString()
-        var actual = fs.readFileSync('sea-modules/biz/login/index.js').toString()
-        assert.strictEqual(actual, expected)
-    })
-})
+        asb.clean({
+            cwd: './',
+            src: ['.tmp/.transport/amrio']
+        })
+
+        asb.build({
+            src: 'biz',
+            minify: false,
+            include: 'all',
+            clean: false,
+            debug: true
+        })
+    },
+    function() {
+        process.chdir('./assets')
+
+        asb.build({
+            src: 'amrio/tips/index.js',
+            minify: false,
+            clean: false,
+            debug: true,
+            test: true
+        })
+    }
+]
+
+function doStep(step) {
+    step--
+    steps[step] && steps[step]()
+}
+
+// doStep(1)
+// doStep(2)
+// doStep(3)
+// doStep(4)
+// doStep(5)
+doStep(6)
