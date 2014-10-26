@@ -57,7 +57,6 @@ function main() {
     console.log('paths: %s', options.paths)
     console.log('all: %s\n', options.all)
 
-    console.log(typeof options.all)
     builder({
         src: options.src,
         dest: options.dest,
