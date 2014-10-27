@@ -30,7 +30,7 @@ define("amrio/tips/index", [], function(require, exports, module) {
     };
 });
 
-;;
+undefined;
 
 define("amrio/tips/helper", [], function(require, exports, module) {
     "use strict";
@@ -56,7 +56,7 @@ define("biz/login/error-msg", [], function(require, exports, module) {
     };
 });
 
-;;
+undefined;
 
 define("biz/login/style.css", [], function() {
     seajs.importStyle(".ui-tips{ color: #eee; border: 1px #666 solid; }");

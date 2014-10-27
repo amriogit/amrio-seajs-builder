@@ -5,6 +5,9 @@ var builder = require('../')
 
 process.chdir('test/assets')
 
+function removeImpurity(file) {
+    return file.toString().replace(/\n|\r|\s/g, '')
+}
 describe('builder', function() {
     it('builder relative', function() {
         builder({
@@ -12,9 +15,9 @@ describe('builder', function() {
             all: false,
             minify: false
         })
-        var expected = fs.readFileSync('amrio/tips/index.js.expected').toString()
-        var actual = fs.readFileSync('sea-modules/amrio/tips/index.js').toString()
-        assert.strictEqual(actual, expected)
+        var expected = fs.readFileSync('amrio/tips/index.js.expected')
+        var actual = fs.readFileSync('sea-modules/amrio/tips/index.js')
+        assert.strictEqual(removeImpurity(actual), removeImpurity(expected))
     })
 
     it('builder all', function() {
@@ -23,8 +26,8 @@ describe('builder', function() {
             all: true,
             minify: false
         })
-        var expected = fs.readFileSync('biz/login/index.js.expected').toString()
-        var actual = fs.readFileSync('sea-modules/biz/login/index.js').toString()
-        assert.strictEqual(actual, expected)
+        var expected = fs.readFileSync('biz/login/index.js.expected')
+        var actual = fs.readFileSync('sea-modules/biz/login/index.js')
+        assert.strictEqual(removeImpurity(actual), removeImpurity(expected))
     })
 })

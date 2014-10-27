@@ -30,7 +30,8 @@ function Builder(options) {
         all: false,
         paths: ['sea-modules'],
         dest: 'sea-modules',
-        minify: true
+        minify: true,
+        exclude: []
     }
     this.options = extend(defaults, options)
     this.start()
@@ -71,7 +72,7 @@ extend(Builder.prototype, {
     },
     concatModule: function(uri, modulePaths) {
         uri = cmd.iduri.normalize(uri)
-        
+
         var module = this.getModule(uri, modulePaths)
 
         if (!module) {
@@ -99,7 +100,7 @@ extend(Builder.prototype, {
         return this.cleanModule(meta.id, deps.remains, module)
     },
     cleanModule: function(id, remains, module) {
-        var ast = cmd.ast.getAst(module)
+        var ast = UglifyJS.parse(module)
 
         function anonymousModule(node) {
             node.args[2] = node.args[0]
@@ -125,36 +126,37 @@ extend(Builder.prototype, {
             }
         }
 
-        var has = {},
-            semicolon = new UglifyJS.AST_EmptyStatement()
+        var cache = {},
+            undefinedNode = new UglifyJS.AST_Atom()
 
         function hasDuplicateModule(node) {
             if (node.args[0] instanceof UglifyJS.AST_String) {
                 var id = node.args[0].value
                 delete remains[id]
-                if (has[id]) {
+                if (cache[id]) {
                     return true
                 } else {
-                    has[id] = true
+                    cache[id] = true
                 }
             }
         }
 
+        var anonymousNodes = []
         ast = ast.transform(new UglifyJS.TreeTransformer(function(node) {
-            if (node instanceof UglifyJS.AST_Call && node.expression.name === 'define' && node.args.length === 3) {
-                cleanOtherDeps(node)
-                if (hasDuplicateModule(node)) {
-                    return semicolon
+            if (node instanceof UglifyJS.AST_Call && node.expression.name === 'define') {
+                if (node.args.length === 1) {
+                    anonymousNodes.push(node)
+                } else if (node.args.length === 3) {
+                    if (hasDuplicateModule(node)) {
+                        return undefinedNode
+                    }
+                    cleanOtherDeps(node)
+                    return node
                 }
-                return node
             }
         }))
 
-        ast = ast.transform(new UglifyJS.TreeTransformer(function(node) {
-            if (node instanceof UglifyJS.AST_Call && node.expression.name === 'define' && node.args.length === 1) {
-                anonymousModule(node)
-            }
-        }))
+        anonymousNodes.forEach(anonymousModule)
 
         return this.uglify(ast)
     },
@@ -166,14 +168,14 @@ extend(Builder.prototype, {
         }
 
         meta.dependencies.forEach(function(id) {
-            var isAbs = self.isAbsId(id)
+            var isAbs = id.charAt(0) !== '.'
+            var uri = cmd.iduri.absolute(meta.id, id)
 
-            if (isAbs && !self.options.all) {
-                result.remains[id] = true
+            if ((self.options.exclude.indexOf(uri) > -1) || (isAbs && !self.options.all)) {
+                result.remains[uri] = true
                 return
             }
 
-            var uri = cmd.iduri.absolute(meta.id, id)
             var module = self.concatModule(uri, isAbs ? self.options.paths : null)
 
             if (module) {
@@ -185,9 +187,6 @@ extend(Builder.prototype, {
 
         return result
     },
-    isAbsId: function(id) {
-        return id.charAt(0) !== '.'
-    },
     getModule: function(id, modulePaths) {
         var self = this
         var module = null,
@@ -196,7 +195,7 @@ extend(Builder.prototype, {
         module = this.moduleCache(id)
         if (module !== undefined) {
             if (module === null) {
-                console.log('Null module ' + id)
+                console.log('Null ' + id)
             }
             return module
         }

@@ -14,7 +14,7 @@ amrio-seajs-builder 是一个合并前端 **CMD** 模块的工具，目前只是
 * 分析文件合并后的 AST，置空其它依赖模块的依赖数组，把这些依赖数组去重后只放入入口模块的依赖数组里，进一步减小文件后合并大小   
 
 * 分析文件合并后的 AST 并删除重复的模块，   
-重复`define(id, deps, factory)`的模块用`;`号代替掉了，如果不是使用`define`严格包裹的模块可能会发生错误，因为只是简单的把`define(id, deps, factory)`变成空语句`;`   
+重复`define(id, deps, factory)`的模块用`undefined;`代替掉了，如果不是使用`define`严格包裹的模块可能会发生错误，因为只是简单的把`define(id, deps, factory)`变成`undefined;`   
 
 * 采用了缓存策略，提升 transport，concat 的性能   
  

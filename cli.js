@@ -35,7 +35,6 @@ function getOptions() {
         })
         // .option('-a, --alias <path>', 'alias config file path [./alias.json]', './alias.json')
         .option('--all', 'concat include all scope')
-        .option('--force', 'force')
         .option('--no-minify', 'disabled minify')
         .parse(process.argv)
 
