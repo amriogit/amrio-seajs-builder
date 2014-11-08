@@ -23,7 +23,20 @@ function color(text) {
 }
 
 var cache = {}
-Builder.cache = cache
+
+function builder(options) {
+    return new Builder(options)
+}
+module.exports = builder
+
+extend(builder, {
+    cache: cache,
+    UglifyJS: UglifyJS,
+    saveFile: function(filepath, file) {
+        mkdirp.sync(path.dirname(filepath))
+        fs.writeFileSync(filepath, file)
+    }
+})
 
 function Builder(options) {
     var defaults = {
@@ -33,8 +46,20 @@ function Builder(options) {
         minify: true,
         exclude: []
     }
+
     this.options = extend(defaults, options)
-    this.start()
+
+    var cwd = null
+    if (this.options.cwd) {
+        cwd = process.cwd()
+        process.chdir(this.options.cwd)
+    }
+
+    this.build()
+
+    if (cwd) {
+        process.chdir(cwd)
+    }
 }
 
 extend(Builder.prototype, {
@@ -44,29 +69,37 @@ extend(Builder.prototype, {
             return module
         } else {
             module = cache[id]
-            module && console.log('Hit %s', id)
             return module
         }
     },
-    start: function() {
-        console.log('Starting...')
+    build: function() {
         var self = this
         var filespath = []
+
+        console.log('Starting build: %s', color(self.options.src))
+
         if (fs.statSync(self.options.src).isFile()) {
             filespath = filespath.concat(self.options.src)
         } else {
-            filespath = glob.sync(path.join(self.options.src, '**/*.{js,css}'))
+            filespath = glob.sync(path.join(self.options.src, '**'), {
+                cache: 1
+            })
         }
         filespath.forEach(function(uri) {
-            var module = null
-            if (path.extname(uri) === '.css') {
-                module = fs.readFileSync(uri)
-            } else {
+            if (!fs.statSync(uri).isFile()) {
+                return
+            }
+            var module = null,
+                logText = 'Build to %s ok.'
+            if (path.extname(uri) === '.js') {
                 module = self.concatModule(uri)
+            } else {
+                module = fs.readFileSync(uri)
+                logText = 'Copy to %s ok.'
             }
 
             if (module) {
-                self.saveFile(uri, module)
+                self.saveFile(uri, module, logText)
             }
         })
     },
@@ -74,24 +107,21 @@ extend(Builder.prototype, {
         uri = cmd.iduri.normalize(uri)
 
         var module = this.getModule(uri, modulePaths)
-
         if (!module) {
             return module
         }
-
-        var ast = cmd.ast.getAst(module)
-        var meta = cmd.ast.parseFirst(ast)
-
-        if (!meta) {
-            return
+        var meta = cmd.ast.parseFirst(module)
+            // 非 CMD 模块
+        if (meta === undefined) {
+            return module
         }
-
+        // 已经构建好的模块
         if (meta.id) {
             return module
         }
 
         meta.id = uri.replace(/\.js$/, '')
-        var deps = this.resolveDependencies(meta)
+        var deps = this.getDeps(meta)
 
         module += ';' + Object.keys(deps.files).map(function(id) {
             return deps.files[id]
@@ -99,68 +129,7 @@ extend(Builder.prototype, {
 
         return this.cleanModule(meta.id, deps.remains, module)
     },
-    cleanModule: function(id, remains, module) {
-        var ast = UglifyJS.parse(module)
-
-        function anonymousModule(node) {
-            node.args[2] = node.args[0]
-            node.args[0] = new UglifyJS.AST_String({
-                value: id
-            })
-            node.args[1] = new UglifyJS.AST_Array({
-                elements: Object.keys(remains).map(function(id) {
-                    return new UglifyJS.AST_String({
-                        value: id
-                    })
-                })
-            })
-        }
-
-        function cleanOtherDeps(node) {
-            if (node.args[1] instanceof UglifyJS.AST_Array) {
-                var elements = node.args[1].elements
-                elements.forEach(function(element) {
-                    remains[element.value] = true
-                })
-                node.args[1].elements = []
-            }
-        }
-
-        var cache = {},
-            undefinedNode = new UglifyJS.AST_Atom()
-
-        function hasDuplicateModule(node) {
-            if (node.args[0] instanceof UglifyJS.AST_String) {
-                var id = node.args[0].value
-                delete remains[id]
-                if (cache[id]) {
-                    return true
-                } else {
-                    cache[id] = true
-                }
-            }
-        }
-
-        var anonymousNodes = []
-        ast = ast.transform(new UglifyJS.TreeTransformer(function(node) {
-            if (node instanceof UglifyJS.AST_Call && node.expression.name === 'define') {
-                if (node.args.length === 1) {
-                    anonymousNodes.push(node)
-                } else if (node.args.length === 3) {
-                    if (hasDuplicateModule(node)) {
-                        return undefinedNode
-                    }
-                    cleanOtherDeps(node)
-                    return node
-                }
-            }
-        }))
-
-        anonymousNodes.forEach(anonymousModule)
-
-        return this.uglify(ast)
-    },
-    resolveDependencies: function(meta) {
+    getDeps: function(meta) {
         var self = this
         var result = {
             remains: {},
@@ -187,16 +156,74 @@ extend(Builder.prototype, {
 
         return result
     },
+    cleanModule: function(id, remains, module) {
+        var ast = UglifyJS.parse(module)
+        var cache = {},
+            undefinedNode = new UglifyJS.AST_Atom()
+        var anonymousNodes = []
+
+        function anonymousModule(node) {
+            node.args[2] = node.args[0]
+            node.args[0] = new UglifyJS.AST_String({
+                value: id
+            })
+            node.args[1] = new UglifyJS.AST_Array({
+                elements: Object.keys(remains).map(function(id) {
+                    return new UglifyJS.AST_String({
+                        value: id
+                    })
+                })
+            })
+        }
+
+        function cleanOtherDeps(node) {
+            if (node.args[1] instanceof UglifyJS.AST_Array) {
+                var elements = node.args[1].elements
+                elements.forEach(function(element) {
+                    remains[element.value] = true
+                })
+                node.args[1].elements = []
+            }
+        }
+
+        function hasDuplicateModule(node) {
+            if (node.args[0] instanceof UglifyJS.AST_String) {
+                var id = node.args[0].value
+                delete remains[id]
+                if (cache[id]) {
+                    return true
+                } else {
+                    cache[id] = true
+                }
+            }
+        }
+
+        ast = ast.transform(new UglifyJS.TreeTransformer(function(node) {
+            if (node instanceof UglifyJS.AST_Call && node.expression.name === 'define') {
+                if (node.args.length === 1) {
+                    anonymousNodes.push(node)
+                } else if (node.args.length === 3) {
+                    if (hasDuplicateModule(node)) {
+                        return undefinedNode
+                    }
+                    cleanOtherDeps(node)
+                    return node
+                }
+            }
+        }))
+
+        anonymousNodes.forEach(anonymousModule)
+
+        return this.minify(ast)
+    },
     getModule: function(id, modulePaths) {
         var self = this
         var module = null,
             uri = cmd.iduri.appendext(id)
 
         module = this.moduleCache(id)
-        if (module !== undefined) {
-            if (module === null) {
-                console.log('Null ' + id)
-            }
+        if (module === null) {
+            console.log('Null ' + id)
             return module
         }
         if (modulePaths) {
@@ -210,11 +237,32 @@ extend(Builder.prototype, {
         this.moduleCache(id, module)
         return module
     },
-    saveFile: function(filepath, file) {
-        var realpath = path.join(this.options.dest, filepath)
-        mkdirp.sync(path.dirname(realpath))
-        fs.writeFileSync(realpath, file)
-        console.log('Saved %s ok.', filepath)
+    css2js: function(id, file) {
+        var tpl = [
+            'define("%s", [], function() { ',
+            'seajs.importStyle(%s)',
+            ' });'
+        ].join('')
+        file = util.format(tpl, id, JSON.stringify(file).replace(/(\s|\\n|\\r)+/g, ' '))
+        return file || null
+    },
+    minify: function(ast) {
+        if (!this.options.minify) {
+            return ast.print_to_string({
+                beautify: true
+            })
+        }
+
+        ast.figure_out_scope()
+        ast = ast.transform(UglifyJS.Compressor({
+            warnings: false
+        }))
+        ast.figure_out_scope()
+        ast.compute_char_frequency()
+        ast.mangle_names()
+        return ast.print_to_string({
+            ascii_only: true
+        })
     },
     getFile: function(filepath, basepath) {
         var extname = path.extname(filepath)
@@ -229,40 +277,13 @@ extend(Builder.prototype, {
             var file = fs.readFileSync(realpath).toString()
             return path.extname(realpath) === '.css' ? this.css2js(filepath, file) : file
         } else {
-            console.log('Not found %s', realpath)
+            console.log('Not found %s', color(realpath))
             return null
         }
     },
-    css2js: function(id, file) {
-        var tpl = [
-            'define("%s", [], function() { ',
-            'seajs.importStyle(%s)',
-            ' });'
-        ].join('')
-        file = util.format(tpl, id, JSON.stringify(file).replace(/(\s|\\n|\\r)+/g, ' '))
-        return file || null
-    },
-    uglify: function(ast) {
-        if (!this.options.minify) {
-            return ast.print_to_string({
-                beautify: true
-            })
-        }
-
-        ast.figure_out_scope()
-        ast = ast.transform(UglifyJS.Compressor({
-            warnings: false
-        }))
-        ast.figure_out_scope()
-        ast.compute_char_frequency()
-        ast.mangle_names()
-
-        return ast.print_to_string({
-            ascii_only: true
-        })
+    saveFile: function(filepath, file, logText) {
+        var realpath = path.join(this.options.dest, filepath)
+        builder.saveFile(realpath, file)
+        console.log(logText, color(realpath))
     }
 })
-
-module.exports = function(options) {
-    return new Builder(options)
-}

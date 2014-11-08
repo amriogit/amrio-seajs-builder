@@ -3,12 +3,14 @@ var fs = require('fs'),
 
 var builder = require('../')
 
-process.chdir('test/assets')
-
 function removeImpurity(file) {
     return file.toString().replace(/\n|\r|\s/g, '')
 }
 describe('builder', function() {
+    before(function() {
+        process.chdir('test/assets')
+    })
+    
     it('builder relative', function() {
         builder({
             src: 'amrio',
@@ -24,7 +26,8 @@ describe('builder', function() {
         builder({
             src: 'biz/login/index.js',
             all: true,
-            minify: false
+            minify: false,
+            exclude: ['$', 'angular']
         })
         var expected = fs.readFileSync('biz/login/index.js.expected')
         var actual = fs.readFileSync('sea-modules/biz/login/index.js')

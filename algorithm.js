@@ -28,7 +28,7 @@ readFile(filepath)
         return null
     let findFile = fs.readFile(filepath)
     return findFile
-
+ruby
 css2js(uri)
     let id = uri
     return format(tpl, id, readFile(uri))

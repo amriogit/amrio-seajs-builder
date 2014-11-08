@@ -13,4 +13,8 @@ define(function(require, exports, module) {
     module.exports = function() {
         tips.show('login success')
     }
+
+    require('./nocmd')
+    require('./nocmd')
+    require('./nocmd')
 })

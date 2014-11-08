@@ -10,6 +10,9 @@ define("biz/login/index", [ "$", "angular", "bootstrap" ], function(require, exp
     module.exports = function() {
         tips.show("login success");
     };
+    require("./nocmd");
+    require("./nocmd");
+    require("./nocmd");
 });
 
 define("amrio/tips/style.css", [], function() {
@@ -61,3 +64,7 @@ undefined;
 define("biz/login/style.css", [], function() {
     seajs.importStyle(".ui-tips{ color: #eee; border: 1px #666 solid; }");
 });
+
+(function() {
+    console.log("这是一个 nocmd");
+})();
