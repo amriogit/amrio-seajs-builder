@@ -158,6 +158,8 @@ extend(Builder.prototype, {
     },
     cleanModule: function(id, remains, module) {
         var ast = UglifyJS.parse(module)
+        ast.figure_out_scope()
+
         var cache = {},
             undefinedNode = new UglifyJS.AST_Atom()
         var anonymousNodes = []
@@ -199,7 +201,8 @@ extend(Builder.prototype, {
         }
 
         ast = ast.transform(new UglifyJS.TreeTransformer(function(node) {
-            if (node instanceof UglifyJS.AST_Call && node.expression.name === 'define') {
+            if (node instanceof UglifyJS.AST_Call && node.expression.name === 'define' && node.expression.thedef.global) {
+                debugger
                 if (node.args.length === 1) {
                     anonymousNodes.push(node)
                 } else if (node.args.length === 3) {
@@ -253,7 +256,6 @@ extend(Builder.prototype, {
             })
         }
 
-        ast.figure_out_scope()
         ast = ast.transform(UglifyJS.Compressor({
             warnings: false
         }))
