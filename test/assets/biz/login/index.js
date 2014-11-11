@@ -2,7 +2,7 @@
     if (define.cmd) {
         define(function test(require, exports, module) {
             'use strict'
-
+            require('./lala')
             // var $ = require('$')
             // var angular = require('angular')
             // require('amrio/tips/style.css')
@@ -22,7 +22,7 @@
 
             // var define = window.define
 
-            define('inner', ['inner-define', './inner-define'], function(m1, m2) {
+            define('inner/index', ['inner-define', './inner-define'], function(m1, m2) {
                 console.log(m1, m2)
             })
         })

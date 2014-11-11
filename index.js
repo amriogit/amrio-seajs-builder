@@ -180,9 +180,10 @@ extend(Builder.prototype, {
 
         function cleanOtherDeps(node) {
             if (node.args[1] instanceof UglifyJS.AST_Array) {
-                var elements = node.args[1].elements
-                elements.forEach(function(element) {
-                    remains[element.value] = true
+                var id = node.args[0].value
+                node.args[1].elements.forEach(function(element) {
+                    var dep = cmd.iduri.absolute(id, element.value)
+                    remains[dep] = true
                 })
                 node.args[1].elements = []
             }
@@ -202,7 +203,6 @@ extend(Builder.prototype, {
 
         ast = ast.transform(new UglifyJS.TreeTransformer(function(node) {
             if (node instanceof UglifyJS.AST_Call && node.expression.name === 'define' && node.expression.thedef.global) {
-                debugger
                 if (node.args.length === 1) {
                     anonymousNodes.push(node)
                 } else if (node.args.length === 3) {
