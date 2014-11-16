@@ -81,9 +81,7 @@ extend(Builder.prototype, {
         if (fs.statSync(self.options.src).isFile()) {
             filespath = filespath.concat(self.options.src)
         } else {
-            filespath = glob.sync(path.join(self.options.src, '**'), {
-                cache: 1
-            })
+            filespath = glob.sync(path.join(self.options.src, '**'))
         }
         filespath.forEach(function(uri) {
             if (!fs.statSync(uri).isFile()) {
@@ -92,7 +90,10 @@ extend(Builder.prototype, {
             var module = null,
                 logText = 'Build to %s ok.'
             if (path.extname(uri) === '.js') {
-                module = self.concatModule(uri)
+                // 不构建以 '_' 开头的模块
+                if (path.basename(uri).charAt(0) === '_') {
+                    return
+                }
             } else {
                 module = fs.readFileSync(uri)
                 logText = 'Copy to %s ok.'
