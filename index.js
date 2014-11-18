@@ -123,11 +123,7 @@ extend(Builder.prototype, {
         meta.id = uri.replace(/\.js$/, '')
         var deps = this.getDeps(meta)
 
-        module += ';' + Object.keys(deps.files).map(function(id) {
-            return deps.files[id]
-        }).join('')
-
-        return this.cleanModule(meta.id, deps.remains, module)
+        return this.concat(meta.id, module, deps)
     },
     getDeps: function(meta) {
         var self = this
@@ -156,13 +152,12 @@ extend(Builder.prototype, {
 
         return result
     },
-    cleanModule: function(id, remains, module) {
+    concat: function(id, module, deps) {
+
         var ast = UglifyJS.parse(module)
         ast.figure_out_scope()
 
-        var cache = {},
-            undefinedNode = new UglifyJS.AST_Atom()
-        var anonymousNodes = []
+        deps = this.cleanDeps(deps)
 
         function anonymousModule(node) {
             node.args[2] = node.args[0]
@@ -170,7 +165,7 @@ extend(Builder.prototype, {
                 value: id
             })
             node.args[1] = new UglifyJS.AST_Array({
-                elements: Object.keys(remains).map(function(id) {
+                elements: Object.keys(deps.remains).map(function(id) {
                     return new UglifyJS.AST_String({
                         value: id
                     })
@@ -178,12 +173,31 @@ extend(Builder.prototype, {
             })
         }
 
+        ast = ast.transform(new UglifyJS.TreeTransformer(function(node) {
+            if (node instanceof UglifyJS.AST_Call && node.expression.name === 'define' && node.expression.thedef.global) {
+                if (node.args.length === 1) {
+                    anonymousModule(node)
+                    return node
+                }
+            }
+        }))
+
+        return this.minify(ast) + '\n' + deps.cleanFiles
+    },
+    cleanDeps: function(deps) {
+        var cache = {}
+        var undefinedNode = new UglifyJS.AST_Atom()
+
+        var files = Object.keys(deps.files).map(function(id) {
+            return deps.files[id]
+        }).join('')
+
         function cleanOtherDeps(node) {
             if (node.args[1] instanceof UglifyJS.AST_Array) {
                 var id = node.args[0].value
                 node.args[1].elements.forEach(function(element) {
                     var dep = cmd.iduri.absolute(id, element.value)
-                    remains[dep] = true
+                    deps.remains[dep] = true
                 })
                 node.args[1].elements = []
             }
@@ -192,7 +206,7 @@ extend(Builder.prototype, {
         function hasDuplicateModule(node) {
             if (node.args[0] instanceof UglifyJS.AST_String) {
                 var id = node.args[0].value
-                delete remains[id]
+                delete deps.remains[id]
                 if (cache[id]) {
                     return true
                 } else {
@@ -201,11 +215,12 @@ extend(Builder.prototype, {
             }
         }
 
+        var ast = UglifyJS.parse(files)
+        ast.figure_out_scope()
+
         ast = ast.transform(new UglifyJS.TreeTransformer(function(node) {
             if (node instanceof UglifyJS.AST_Call && node.expression.name === 'define' && node.expression.thedef.global) {
-                if (node.args.length === 1) {
-                    anonymousNodes.push(node)
-                } else if (node.args.length === 3) {
+                if (node.args.length === 3) {
                     if (hasDuplicateModule(node)) {
                         return undefinedNode
                     }
@@ -215,9 +230,13 @@ extend(Builder.prototype, {
             }
         }))
 
-        anonymousNodes.forEach(anonymousModule)
+        deps.cleanFiles = this.options.minify ? ast.print_to_string({
+            ascii_only: true
+        }) : ast.print_to_string({
+            beautify: true
+        })
 
-        return this.minify(ast)
+        return deps
     },
     getModule: function(id, modulePaths) {
         var self = this

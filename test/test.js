@@ -40,7 +40,7 @@ function test() {
     builder({
         src: 'biz/login/index.js',
         all: true,
-        minify: false,
+        minify: true,
         exclude: ['$', 'angular']
     })
     // var expected = fs.readFileSync('biz/login/index.js.expected')
