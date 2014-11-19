@@ -1,0 +1,9 @@
+@import url("./base.css");
+
+.ui-tips{
+    font-size: 12px;
+    border: 1px #f00 solid;
+}
+.ui-tips-content{
+    background-color: #fff;
+}

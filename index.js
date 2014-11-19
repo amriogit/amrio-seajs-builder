@@ -9,12 +9,8 @@ var cmd = require('cmd-util')
 var UglifyJS = require('uglify-js')
 var mkdirp = require('mkdirp')
 
-function extend(dest, src) {
-    Object.keys(src).map(function(k) {
-        dest[k] = src[k]
-    })
-    return dest
-}
+var helper = require('./helper')
+var Module = require('./module')
 
 function color(text) {
     return util.inspect(text, {
@@ -24,18 +20,89 @@ function color(text) {
 
 var cache = {}
 
-function builder(options) {
-    return new Builder(options)
-}
-module.exports = builder
+function builder(input, options) {
+    
+    function getRealpath(uri) {
+        return path.join(options.base, uri)
+    }
 
-extend(builder, {
-    cache: cache,
+    function handlePaths(id) {
+        var paths = options.paths
+        Object.keys(paths).some(function(p) {
+            if (id.indexOf(p) > -1) {
+                id = id.replace(p, paths[p])
+                return true
+            }
+        })
+        return id
+    }
+
+    var defaults = {
+        base: './',
+        all: true,
+        alias: {},
+        paths: {},
+        dest: 'sea-modules',
+        minify: true
+    }
+
+    var options = helper.extend(defaults, options)
+    Module.config(options)
+
+    console.log('Starting build: %s', color(input))
+
+    var filespath = []
+    var parsePath = handlePaths(input)
+
+    if (fs.statSync(getRealpath(parsePath)).isFile()) {
+        filespath = filespath.concat(parsePath)
+    } else {
+        filespath = glob.sync(path.join(parsePath, '**'), {
+            cwd: options.base
+        })
+    }
+
+    filespath.forEach(function(uri) {
+        var realpath = getRealpath(uri)
+        var logText = 'Build to %s ok.'
+
+        if (!fs.statSync(realpath).isFile()) {
+            return
+        }
+
+        if (path.extname(realpath) === '.js') {
+            Module.use(uri, function(mod) {
+                if (mod.result) {
+                    builder.saveFile(path.join(options.dest, uri), mod.result, logText)
+                }
+            })
+        } else {
+            fs.readFile(realpath, function(err, file) {
+                if (file) {
+                    logText = 'Copy to %s ok.'
+                    builder.saveFile(path.join(options.dest, uri), file, logText)
+                }
+            })
+        }
+    })
+}
+
+helper.extend(builder, {
     UglifyJS: UglifyJS,
-    saveFile: function(filepath, file) {
-        mkdirp.sync(path.dirname(filepath))
-        fs.writeFileSync(filepath, file)
+    saveFile: function(filepath, file, logText) {
+        mkdirp(path.dirname(filepath), function() {
+            fs.writeFile(filepath, file)
+            console.log(logText, filepath)
+        })
     }
 })
 
+module.exports = builder
 
+// builder('amrio', {
+//     base: 'test/assets'
+// })
+
+// builder('biz', {
+//     base: 'test/assets'
+// })
