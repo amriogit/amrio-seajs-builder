@@ -20,7 +20,7 @@
             require('./nocmd')
             require('./nocmd')
 
-            var define = window.define
+            // var define = window.define
 
             define('inner/index', ['inner-define', './inner-define'], function(m1, m2) {
                 console.log(m1, m2)

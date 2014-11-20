@@ -8,12 +8,12 @@ var UglifyJS = require('uglify-js')
 
 var helper = require('./helper')
 
-function Module(id, callback) {
+function Module(id, callback, uri) {
     var self = this
     this.options = helper.extend({}, Module.data)
 
-    this.id = this.handlePaths(id.replace('.js', ''))
-    this.uri = cmd.iduri.normalize(path.join(this.options.base, cmd.iduri.appendext(this.id)))
+    this.id = id
+    this.uri = Module.id2uri(this.id)
 
     this.callbackList = [callback]
     this.result = null
@@ -23,28 +23,13 @@ function Module(id, callback) {
 helper.extend(Module.prototype, {
     callback: function() {
         var self = this
-        self.callbackList.forEach(function(cb) {
-            cb(self)
+        self.callbackList.forEach(function(callback) {
+            callback(self)
         })
-        self.callbackList = []
-        self.called = true
-    },
-    handlePaths: function(id) {
-        var paths = this.options.paths
-        Object.keys(paths).some(function(p) {
-            if (id.indexOf(p) > -1) {
-                id = id.replace(p, paths[p])
-                return true
-            }
-        })
-        return id
-    },
-    handleAlias: function(id) {
-        var alias = this.options.alias[id]
-        return alias || id
+        delete self.callbackList
     },
     addCallback: function(callback) {
-        if (this.called) {
+        if (this.callbackList === undefined) {
             callback(this)
         } else {
             this.callbackList.push(callback)
@@ -55,16 +40,11 @@ helper.extend(Module.prototype, {
         var ext = path.extname(self.uri)
         var parser = self.options.parser[ext] || self.options.parser['.js']
 
-        fs.exists(self.uri, function(exists) {
-            self.exists = exists
-            if (exists) {
-                fs.readFile(self.uri, function(err, file) {
-                    callback(parser(self, fs.readFileSync(self.uri).toString()))
-                })
-            } else {
-                console.log('not found module: %s', self.id)
-                callback(null)
+        parser(self, function(result) {
+            if (result === null) {
+                console.log('Not found module: %s', self.id)
             }
+            callback(result)
         })
     },
     fetch: function() {
@@ -92,27 +72,27 @@ helper.extend(Module.prototype, {
                 this.result = this.factory
                 this.callback()
             } else {
-                this.deps = meta.dependencies
+                this.deps = helper.unique(meta.dependencies)
                 this.load()
             }
         }
     },
     load: function() {
         var self = this
-        var depFactories = []
+        var depMods = []
 
-        this.deps = helper.unique(this.deps)
-        helper.asyncEach(this.deps, function(id, next) {
+        helper.asyncEach(self.deps, function(id, done) {
             if (id.charAt(0) !== '.' && !self.options.all) {
-                return next()
+                return done()
             }
-            id = cmd.iduri.absolute(self.id, id)
-            Module.use(id, function(mod) {
-                depFactories.push(mod)
-                next()
+            var topID = cmd.iduri.absolute(self.id, id)
+            topID = Module.parseID(topID)
+            Module.use(topID, function(mod) {
+                depMods.push(mod)
+                done()
             })
         }, function() {
-            self.depFactories = depFactories
+            self.depMods = depMods
             self.concat()
         })
     },
@@ -123,15 +103,16 @@ helper.extend(Module.prototype, {
         if (this.options.minify) {
             this.options.uglify.beautify = false
             ast = this.minify(ast)
+        } else {
+            this.options.uglify.ascii_only = false
         }
 
-        this.result = ast.print_to_string(this.options.uglify) + '\n\n' + asts.print_to_string(this.options.uglify)
+        this.result = ast.print_to_string(this.options.uglify) + '\n' + asts.print_to_string(this.options.uglify)
         this.callback()
     },
     analyseFactory: function() {
         var self = this
-        var ast = UglifyJS.parse(this.factory)
-        ast.figure_out_scope()
+        var ast = UglifyJS.parse(self.factory)
 
         function anonymous(node) {
             var args = []
@@ -160,14 +141,11 @@ helper.extend(Module.prototype, {
     },
     analyseDepFactories: function() {
         var self = this
-        var depFactories = self.depFactories.map(function(mod) {
+        var depFactories = self.depMods.map(function(mod) {
             return mod.result
         })
 
         var ast = UglifyJS.parse(depFactories.join('\n'))
-
-        var undefinedNode = new UglifyJS.AST_Atom()
-        var duplicateCache = {}
 
         var depRemains = {}
         self.deps.forEach(function(dep) {
@@ -185,6 +163,8 @@ helper.extend(Module.prototype, {
             }
         }
 
+        var duplicateCache = {}
+
         function duplicateDefine(node) {
             if (node.args[0] instanceof UglifyJS.AST_String) {
                 var id = node.args[0].value
@@ -200,7 +180,7 @@ helper.extend(Module.prototype, {
         ast = self.eachDefine(ast, function(node) {
             if (node.args.length === 3) {
                 if (duplicateDefine(node)) {
-                    return undefinedNode
+                    return new UglifyJS.AST_Atom()
                 }
                 uselessDeps(node)
                 return node
@@ -221,12 +201,12 @@ helper.extend(Module.prototype, {
         ast.mangle_names()
         return ast
     },
-    eachDefine: function(ast, fn) {
+    eachDefine: function(ast, handler) {
         ast.figure_out_scope()
         return ast.transform(new UglifyJS.TreeTransformer(function(node) {
             var exp = node.expression
             if (node instanceof UglifyJS.AST_Call && exp.name === 'define' && exp.thedef.global) {
-                return fn(node)
+                return handler(node)
             }
         }))
     }
@@ -234,41 +214,99 @@ helper.extend(Module.prototype, {
 
 var moduleCache = {}
 helper.extend(Module, {
-    moduleCache: moduleCache,
-    data: {
-        base: './',
-        alias: {},
-        paths: {},
-        minify: true,
-        all: true,
-        uglify: {
-            ascii_only: true,
-            beautify: true
-        },
-        parser: {
-            '.css': function(mod, file) {
-                var tpl = [
-                    'define("%s", [], function() {',
-                    'seajs.importStyle(%s)',
-                    '});'
-                ].join('')
-                return util.format(tpl, mod.id, JSON.stringify(file)) || null
-            },
-            '.js': function(mod, file) {
-                return file
+    cache: moduleCache,
+    parsePaths: function(id) {
+        var paths = Module.data.paths
+        Object.keys(paths).some(function(p) {
+            if (id.indexOf(p) > -1) {
+                id = id.replace(p, paths[p])
+                return true
             }
-        }
+        })
+        return id
+    },
+    parseAlias: function(id) {
+        return Module.data.alias[id] || id
+    },
+    parseID: function(id) {
+        id = id.replace('.js', '')
+        id = Module.parseAlias(id)
+        id = Module.parsePaths(id)
+        return id
+    },
+    id2uri: function(id) {
+        var uri = path.join(Module.data.base, cmd.iduri.appendext(id))
+        return cmd.iduri.normalize(uri)
     },
     use: function(id, callback) {
-        var mod = moduleCache[id]
+        id = Module.parseID(id)
+        var uri = Module.id2uri(id)
+        var mod = moduleCache[uri]
         if (!mod) {
-            moduleCache[id] = new Module(id, callback)
+            moduleCache[uri] = new Module(id, callback)
         } else {
             mod.addCallback(callback)
         }
     },
     config: function(options) {
         helper.extend(Module.data, options)
+    }
+})
+
+Module.data = {
+    base: './',
+    alias: {},
+    paths: {},
+    minify: true,
+    all: true,
+    data: {},
+    uglify: {
+        ascii_only: true,
+        beautify: true
+    }
+}
+
+Module.config({
+    parser: {
+        '.css': function(mod, callback) {
+            fs.exists(mod.uri, function(exists) {
+                if (exists) {
+                    fs.readFile(mod.uri, function(err, file) {
+                        if (err) throw err
+                        var tpl = 'define("%s", [], function() { seajs.importStyle(%s); });'
+                        var result = util.format(tpl, mod.id, JSON.stringify(file.toString())) || null
+                        callback(result)
+                    })
+                } else {
+                    callback(null)
+                }
+            })
+        },
+        '.js': function(mod, callback) {
+            fs.exists(mod.uri, function(exists) {
+                if (exists) {
+                    fs.readFile(mod.uri, function(err, file) {
+                        if (err) throw err
+                        callback(file.toString())
+                    })
+                } else {
+                    callback(null)
+                }
+            })
+        },
+        '.tpl': function(mod, callback) {
+            var realuri = mod.uri + '.js'
+            fs.exists(realuri, function(exists) {
+                if (exists) {
+                    fs.readFile(realuri, function(err, file) {
+                        if (err) throw err
+                        callback(file.toString())
+                    })
+                } else {
+                    callback(null)
+                }
+            })
+        }
     }
 })
 
@@ -283,22 +321,23 @@ function test() {
         console.log(mod.result)
     })
 
-    Module.use('amrio/tips/helper', function(mod) {
-        console.log(1, mod.result)
-    })
+    // Module.use('amrio/tips/helper', function(mod) {
+    //     console.log(1, mod.result)
+    // })
 
-    Module.use('amrio/tips/helper', function(mod) {
-        console.log(2, mod.result)
-    })
+    // Module.use('amrio/tips/helper', function(mod) {
+    //     console.log(2, mod.result)
+    // })
 
-    Module.use('amrio/tips/helper', function(mod) {
-        console.log(3, mod.result)
-    })
+    // Module.use('amrio/tips/helper', function(mod) {
+    //     console.log(3, mod.result)
+    // })
 
-    setTimeout(function() {
-        Module.use('amrio/tips/helper', function(mod) {
-            console.log(4, mod.result)
-        })
-    }, 1000)
+    // setTimeout(function() {
+    //     Module.use('amrio/tips/helper', function(mod) {
+    //         console.log(4, mod.result)
+    //     })
+    // }, 1000)
 }
+
 // test()

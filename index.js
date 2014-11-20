@@ -18,30 +18,25 @@ function color(text) {
     })
 }
 
-var cache = {}
+function builder(input, options, callback) {
 
-function builder(input, options) {
-    
     function getRealpath(uri) {
         return path.join(options.base, uri)
     }
 
     function handlePaths(id) {
-        var paths = options.paths
-        Object.keys(paths).some(function(p) {
-            if (id.indexOf(p) > -1) {
-                id = id.replace(p, paths[p])
-                return true
-            }
-        })
+        // var paths = options.paths
+        // Object.keys(paths).some(function(p) {
+        //     if (id.indexOf(p) > -1) {
+        //         id = id.replace(p, paths[p])
+        //         return true
+        //     }
+        // })
         return id
     }
 
     var defaults = {
-        base: './',
         all: true,
-        alias: {},
-        paths: {},
         dest: 'sea-modules',
         minify: true
     }
@@ -51,43 +46,48 @@ function builder(input, options) {
 
     console.log('Starting build: %s', color(input))
 
-    var filespath = []
     var parsePath = handlePaths(input)
 
     if (fs.statSync(getRealpath(parsePath)).isFile()) {
-        filespath = filespath.concat(parsePath)
+        handler(parsePath)
     } else {
-        filespath = glob.sync(path.join(parsePath, '**'), {
+        glob(path.join(parsePath, '**'), {
             cwd: options.base
+        }, function(err, filespaths) {
+            handler(filespaths)
         })
     }
 
-    filespath.forEach(function(uri) {
-        var realpath = getRealpath(uri)
-        var logText = 'Build to %s ok.'
+    function handler(uris) {
+        Array.isArray(uris) || (uris = [uris])
+        uris.forEach(function(uri) {
+            var realpath = getRealpath(uri)
+            var logText = 'Build to %s ok.'
 
-        if (!fs.statSync(realpath).isFile()) {
-            return
-        }
+            if (!fs.statSync(realpath).isFile()) {
+                return
+            }
 
-        if (path.extname(realpath) === '.js') {
-            Module.use(uri, function(mod) {
-                if (mod.result) {
-                    builder.saveFile(path.join(options.dest, uri), mod.result, logText)
-                }
-            })
-        } else {
-            fs.readFile(realpath, function(err, file) {
-                if (file) {
-                    logText = 'Copy to %s ok.'
-                    builder.saveFile(path.join(options.dest, uri), file, logText)
-                }
-            })
-        }
-    })
+            if (path.extname(realpath) === '.js') {
+                Module.use(uri, function(mod) {
+                    if (mod.result) {
+                        builder.saveFile(path.join(options.dest, uri), mod.result, logText)
+                    }
+                })
+            } else {
+                fs.readFile(realpath, function(err, file) {
+                    if (file) {
+                        logText = 'Copy to %s ok.'
+                        builder.saveFile(path.join(options.dest, uri), file, logText)
+                    }
+                })
+            }
+        })
+    }
 }
 
 helper.extend(builder, {
+    Module: Module,
     UglifyJS: UglifyJS,
     saveFile: function(filepath, file, logText) {
         mkdirp(path.dirname(filepath), function() {

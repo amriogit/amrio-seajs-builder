@@ -14,6 +14,11 @@ var helper = {
     extend: function() {
         var args = AP.slice.call(arguments, 0)
         var dest = args.shift()
+
+        if(!dest) {
+            return dest
+        }
+        
         args.forEach(function(src) {
             if (!src) return
             Object.keys(src).map(function(k) {
@@ -22,7 +27,7 @@ var helper = {
 
                 } else if (Array.isArray(dest[k]) && Array.isArray(src[k])) {
                     dest[k].concat(src[k])
-                    
+
                 } else {
                     dest[k] = src[k]
                 }
@@ -42,18 +47,36 @@ var helper = {
         })
         return result
     },
-    asyncEach: function(list, iterator, done) {
+    asyncEachSeries: function(array, iterator, callback) {
         var index = 0
 
         function next() {
-            if (index >= list.length) {
-                done()
+            if (index >= array.length) {
+                callback()
             } else {
-                iterator(list[index++], next)
+                iterator(array[index++], next)
             }
         }
 
         next()
+    },
+    asyncEach: function(array, iterator, callback) {
+        var index = 0
+        var len = array.length
+
+        function done() {
+            if (++index >= len) {
+                callback()
+            }
+        }
+
+        if (array.length === 0) {
+            callback()
+        } else {
+            array.forEach(function(item) {
+                iterator(item, done)
+            })
+        }
     }
 }
 
