@@ -10,27 +10,27 @@ var helper = require('./helper')
 var myUtil = require('./util')
 var config = require('./config')
 
-function parsePaths(id) {
-    var paths = Module.data.paths
-    Object.keys(paths).some(function(p) {
-        if (id.indexOf(p) > -1) {
-            id = id.replace(p, paths[p])
-            return true
-        }
-    })
-    return id
+function Module(meta, options) {
+    this.id = meta.id
+    this.uri = meta.uri
+    this.ext = cmd.iduri.extname(this.uri)
+    this.options = options
+    this.deps = []
+    this.depMods = []
+    this.fetch()
 }
 
-function Module(id) {
-    this.id = id
-    this.uri = myUtil.id2uri(id)
-    this.ext = path.extname(this.uri)
-    this.deps = []
-}
+helper.extend(Module, {
+    cache: {},
+    get: function(meta, options) {
+        var mod = this.cache[meta.uri] || (this.cache[meta.uri] = new Module(meta, options))
+        return mod
+    }
+})
 
 helper.extend(Module.prototype, {
     fetch: function() {
-        var parser = config.data.parser[this.ext]
+        var parser = this.options.parser[this.ext]
         this.factory = parser(this)
 
         if (this.factory === null) {
@@ -42,19 +42,61 @@ helper.extend(Module.prototype, {
         if (meta && !meta.id && meta.dependencies && meta.dependencies.length > 0) {
             this.deps = helper.unique(meta.dependencies)
             this.load()
+        } else {
+            this.concat()
         }
     },
     load: function() {
         var self = this
         var mods = []
-        this.deps.forEach(function(id) {
-            id = cmd.iduri.absolute(self.id, id)
-            var mod = Module.get(id)
-            mod && mods.push(mod)
+
+        this.deps.forEach(function(id, index) {
+            // 配置了只合并相对标识
+            if(!id.charAt(0) === '.' && !self.options.all) {
+                return
+            }
+
+            var absId = cmd.iduri.absolute(self.id, id)
+            var meta = self.getMeta(absId)
+            
+            if (meta.uri) {
+                var mod = Module.get(meta, self.options)
+                mod.factory && mods.push(mod)
+            }
+
+            self.deps[index] = meta.id
         })
-        this.analyseDepMods(mods)
+
+        this.depMods = mods
+        this.concat()
     },
-    analyseFactory: function() {
+    concat: function() {
+        this.factory = [this.parseDepMods(), this.parseFactory()].reverse().join('\n')
+    },
+    getMeta: function(id) {
+        var uri = null
+        this.options.paths.some(function(p) {
+            var filepath = cmd.iduri.appendext(path.join(p, id))
+            if(fs.existsSync(filepath)) {
+                uri = filepath
+                return true
+            }
+        })
+        return {
+            id: id.replace('.js', ''),
+            uri: uri
+        }
+    },
+    eachDefine: function(ast, handler) {
+        ast.figure_out_scope()
+        return ast.transform(new UglifyJS.TreeTransformer(function(node) {
+            var exp = node.expression
+            if (node instanceof UglifyJS.AST_Call && exp.name === 'define' && exp.thedef.global) {
+                return handler(node)
+            }
+        }))
+    },
+    parseFactory: function() {
         var self = this
         var ast = UglifyJS.parse(self.factory)
 
@@ -76,16 +118,26 @@ helper.extend(Module.prototype, {
             return node
         }
 
-        return self.eachDefine(ast, function(node) {
+        ast = self.eachDefine(ast, function(node) {
             if (node.args.length === 1) {
                 return anonymous(node)
             }
             return node
         })
+
+        if (self.options.minify) {
+            ast = self.minify(ast)
+        }
+
+        return ast.print_to_string(self.options.uglify)
     },
-    analyseDepMods: function(mods) {
+    parseDepMods: function() {
+        if (this.depMods.length === 0) {
+            return ''
+        }
+
         var self = this
-        var depFactories = mods.map(function(mod) {
+        var depFactories = self.depMods.map(function(mod) {
             return mod.factory
         })
 
@@ -93,7 +145,7 @@ helper.extend(Module.prototype, {
 
         var depRemains = {}
         self.deps.forEach(function(dep) {
-            depRemains[cmd.iduri.absolute(self.id, dep)] = true
+            depRemains[dep] = true
         })
 
         function uselessDeps(node) {
@@ -134,7 +186,7 @@ helper.extend(Module.prototype, {
 
         self.deps = Object.keys(depRemains)
 
-        return ast
+        return ast.print_to_string(self.options.uglify)
     },
     minify: function(ast) {
         ast = ast.transform(UglifyJS.Compressor({
@@ -144,14 +196,7 @@ helper.extend(Module.prototype, {
         ast.compute_char_frequency()
         ast.mangle_names()
         return ast
-    },
-    eachDefine: function(ast, handler) {
-        ast.figure_out_scope()
-        return ast.transform(new UglifyJS.TreeTransformer(function(node) {
-            var exp = node.expression
-            if (node instanceof UglifyJS.AST_Call && exp.name === 'define' && exp.thedef.global) {
-                return handler(node)
-            }
-        }))
     }
 })
+
+module.exports = Module

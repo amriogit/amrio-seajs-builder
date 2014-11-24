@@ -12,87 +12,78 @@ var mkdirp = require('mkdirp')
 var helper = require('./helper')
 var Module = require('./module')
 
-function color(text) {
-    return util.inspect(text, {
-        colors: true
+var defaults = {
+    all: false,
+    minify: true,
+    base: './',
+    dest: 'sea-modules',
+    paths: ['sea-modules', './'],
+    parser: require('./parsers')
+}
+
+function getMetas(id, base) {
+    var metas = []
+    var uri = path.join(base, id)
+
+    if (fs.statSync(uri).isFile()) {
+        metas.push({
+            id: id.replace('.js', ''),
+            uri: uri
+        })
+    } else {
+        metas = glob.sync(path.join(id, '**'), {
+            cwd: base
+        }).filter(function(id) {
+            return fs.statSync(path.join(base, id)).isFile()
+        }).map(function(id) {
+            return {
+                id: id.replace('.js', ''),
+                uri: path.join(base, id)
+            }
+        })
+    }
+    return metas
+}
+
+function builder(input, options) {
+    console.log('Building: %s', helper.color(input))
+
+    var options = helper.extend({}, defaults, options)
+
+    var metas = getMetas(input, options.base)
+
+    metas.forEach(function(meta) {
+        var logText = 'Build to %s ok.'
+        var dest = path.join(options.base, options.dest, meta.id)
+        dest = cmd.iduri.appendext(dest)
+
+        if (path.extname(meta.uri) === '.js') {
+            var mod = Module.get(meta, options)
+            if (mod.factory) {
+                builder.saveFile(dest, mod.factory, logText)
+            }
+        } else {
+            fs.readFile(meta.uri, function(err, file) {
+                if (file) {
+                    logText = 'Copy to %s ok.'
+                    builder.saveFile(dest, file, logText)
+                }
+            })
+        }
     })
 }
 
-function builder(input, options, callback) {
-
-    function getRealpath(uri) {
-        return path.join(options.base, uri)
-    }
-
-    function handlePaths(id) {
-        // var paths = options.paths
-        // Object.keys(paths).some(function(p) {
-        //     if (id.indexOf(p) > -1) {
-        //         id = id.replace(p, paths[p])
-        //         return true
-        //     }
-        // })
-        return id
-    }
-
-    var defaults = {
-        all: true,
-        dest: 'sea-modules',
-        minify: true
-    }
-
-    var options = helper.extend(defaults, options)
-    Module.config(options)
-
-    console.log('Starting build: %s', color(input))
-
-    var parsePath = handlePaths(input)
-
-    if (fs.statSync(getRealpath(parsePath)).isFile()) {
-        handler(parsePath)
-    } else {
-        glob(path.join(parsePath, '**'), {
-            cwd: options.base
-        }, function(err, filespaths) {
-            handler(filespaths)
-        })
-    }
-
-    function handler(uris) {
-        Array.isArray(uris) || (uris = [uris])
-        uris.forEach(function(uri) {
-            var realpath = getRealpath(uri)
-            var logText = 'Build to %s ok.'
-
-            if (!fs.statSync(realpath).isFile()) {
-                return
-            }
-
-            if (path.extname(realpath) === '.js') {
-                Module.use(uri, function(mod) {
-                    if (mod.result) {
-                        builder.saveFile(path.join(options.dest, uri), mod.result, logText)
-                    }
-                })
-            } else {
-                fs.readFile(realpath, function(err, file) {
-                    if (file) {
-                        logText = 'Copy to %s ok.'
-                        builder.saveFile(path.join(options.dest, uri), file, logText)
-                    }
-                })
-            }
-        })
-    }
-}
-
 helper.extend(builder, {
-    Module: Module,
     UglifyJS: UglifyJS,
     saveFile: function(filepath, file, logText) {
         mkdirp(path.dirname(filepath), function() {
             fs.writeFile(filepath, file)
-            console.log(logText, filepath)
+
+            if (!logText) {
+                logText = 'save %s ok.'
+            }
+
+            console.log(logText, helper.color(filepath))
         })
     }
 })

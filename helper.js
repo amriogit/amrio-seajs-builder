@@ -1,3 +1,5 @@
+var util = require('util')
+
 var OP = Object.prototype
 var AP = Array.prototype
 

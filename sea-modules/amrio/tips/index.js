@@ -1,0 +1,2 @@
+define("amrio/tips/index",[],function(e){"use strict";e("./helper"),e("./helper"),e("./base.css")});
+define("amrio/tips/helper",[],function(e,i,r){"use strict";r.exports={helper:{}}});define("amrio/tips/base.css",[],function(){seajs.importStyle(".base{\r\n    color: #333;\r\n}")});
