@@ -18,6 +18,10 @@ var defaults = {
     base: './',
     dest: 'sea-modules',
     paths: ['sea-modules', './'],
+    exclude: [],
+    uglify: {
+        ascii_only: true
+    },
     parser: require('./parsers')
 }
 
@@ -46,14 +50,13 @@ function getMetas(id, base) {
 }
 
 function builder(input, options) {
-    console.log('Building: %s', helper.color(input))
+    console.log('BUILDING: %s', helper.color(input))
 
     var options = helper.extend({}, defaults, options)
-
     var metas = getMetas(input, options.base)
 
     metas.forEach(function(meta) {
-        var logText = 'Build to %s ok.'
+        var logText = 'BUILD TO %s OK.'
         var dest = path.join(options.base, options.dest, meta.id)
         dest = cmd.iduri.appendext(dest)
 
@@ -63,35 +66,33 @@ function builder(input, options) {
                 builder.saveFile(dest, mod.factory, logText)
             }
         } else {
-            fs.readFile(meta.uri, function(err, file) {
-                if (file) {
-                    logText = 'Copy to %s ok.'
-                    builder.saveFile(dest, file, logText)
-                }
-            })
+            var file = fs.readFileSync(meta.uri)
+            if (file) {
+                logText = 'COPY TO %s OK.'
+                builder.saveFile(dest, file, logText)
+            }
         }
     })
 }
 
 helper.extend(builder, {
     UglifyJS: UglifyJS,
+    Module: Module,
     saveFile: function(filepath, file, logText) {
-        mkdirp(path.dirname(filepath), function() {
-            fs.writeFile(filepath, file)
-
-            if (!logText) {
-                logText = 'save %s ok.'
-            }
-
-            console.log(logText, helper.color(filepath))
-        })
+        mkdirp.sync(path.dirname(filepath))
+        fs.writeFileSync(filepath, file)
+        if (!logText) {
+            logText = 'SAVE %s OK.'
+        }
+        console.log(logText, helper.color(filepath))
     }
 })
 
 module.exports = builder
 
 // builder('amrio', {
-//     base: 'test/assets'
+//     base: 'test/assets',
+//     exclude: ['$', 'bootstrap']
 // })
 
 // builder('biz', {

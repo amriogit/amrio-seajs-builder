@@ -13,7 +13,6 @@ var config = require('./config')
 function Module(meta, options) {
     this.id = meta.id
     this.uri = meta.uri
-    this.ext = cmd.iduri.extname(this.uri)
     this.options = options
     this.deps = []
     this.depMods = []
@@ -30,10 +29,12 @@ helper.extend(Module, {
 
 helper.extend(Module.prototype, {
     fetch: function() {
-        var parser = this.options.parser[this.ext]
+        var parser = this.options.parser[cmd.iduri.extname(this.uri)]
+        console.log(cmd.iduri.extname(this.uri))
         this.factory = parser(this)
 
         if (this.factory === null) {
+            console.error('NOT FOUND MOD %s', this.id)
             return
         }
 
@@ -51,17 +52,24 @@ helper.extend(Module.prototype, {
         var mods = []
 
         this.deps.forEach(function(id, index) {
+
             // 配置了只合并相对标识
-            if(!id.charAt(0) === '.' && !self.options.all) {
+            if (id.charAt(0) !== '.' && !self.options.all) {
                 return
             }
 
             var absId = cmd.iduri.absolute(self.id, id)
+            if (self.options.exclude.indexOf(absId) > -1) {
+                return
+            }
+
             var meta = self.getMeta(absId)
-            
+
             if (meta.uri) {
                 var mod = Module.get(meta, self.options)
                 mod.factory && mods.push(mod)
+            } else {
+                console.error('NOT FOUND DEP %s', meta.id)
             }
 
             self.deps[index] = meta.id
@@ -74,10 +82,14 @@ helper.extend(Module.prototype, {
         this.factory = [this.parseDepMods(), this.parseFactory()].reverse().join('\n')
     },
     getMeta: function(id) {
+        var self = this
         var uri = null
-        this.options.paths.some(function(p) {
-            var filepath = cmd.iduri.appendext(path.join(p, id))
-            if(fs.existsSync(filepath)) {
+        self.options.paths.some(function(p) {
+            var filepath = path.join(self.options.base, p, id)
+            filepath = cmd.iduri.appendext(filepath)
+            var hasParser = self.options.parser[path.extname(filepath)]
+            hasParser || (hasParser += '.js')
+            if (fs.existsSync(filepath)) {
                 uri = filepath
                 return true
             }
@@ -140,6 +152,8 @@ helper.extend(Module.prototype, {
         var depFactories = self.depMods.map(function(mod) {
             return mod.factory
         })
+
+        return depFactories.join('\n')
 
         var ast = UglifyJS.parse(depFactories.join('\n'))
 

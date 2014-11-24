@@ -27,9 +27,6 @@ var helper = {
                 if (helper.isObject(dest[k]) && helper.isObject(src[k])) {
                     helper.extend(dest[k], src[k])
 
-                } else if (Array.isArray(dest[k]) && Array.isArray(src[k])) {
-                    dest[k].concat(src[k])
-
                 } else {
                     dest[k] = src[k]
                 }
