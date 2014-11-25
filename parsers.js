@@ -5,14 +5,14 @@ var fs = require('fs'),
 var template = 'define("%s", [], function() { seajs.importStyle(%s); });'
 
 module.exports = {
-    '.js': function(mod, callback) {
+    '.js': function(mod) {
         var result = null
         if (fs.existsSync(mod.uri)) {
             result = fs.readFileSync(mod.uri).toString()
         }
         return result
     },
-    '.css': function(mod, callback) {
+    '.css': function(mod) {
         var result = null
         if (fs.existsSync(mod.uri)) {
             var file = fs.readFileSync(mod.uri)
@@ -20,7 +20,7 @@ module.exports = {
         }
         return result
     },
-    '.tpl': function(mod, callback) {
+    '.tpl': function(mod) {
         var result = null
         var uri = mod.uri + '.js'
         if (fs.existsSync(uri)) {

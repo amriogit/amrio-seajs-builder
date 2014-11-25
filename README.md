@@ -68,8 +68,8 @@ asb -s amrio -p ../../myLib,my-module,../sea-modules
 ```js
 var builder = require('amrio-seajs-builder')
 
-builder({
-    src: 'amrio',
+builder('amrio', {
+    base: './',
     dest: './sea-modules',
     paths: ['../my-modules', 'sea-modules', 'lib'],
     all: true,

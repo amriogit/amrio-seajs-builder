@@ -12,56 +12,38 @@ var mkdirp = require('mkdirp')
 var helper = require('./helper')
 var Module = require('./module')
 
-var defaults = {
-    all: false,
-    minify: true,
-    base: './',
-    dest: 'sea-modules',
-    paths: ['sea-modules', './'],
-    exclude: [],
-    uglify: {
-        ascii_only: true
-    },
-    parser: require('./parsers')
-}
-
 function getMetas(id, base) {
-    var metas = []
-    var uri = path.join(base, id)
-
-    if (fs.statSync(uri).isFile()) {
-        metas.push({
+    var metas = []    
+    var isFile = fs.statSync(path.join(base, id)).isFile()
+    
+    metas = glob.sync(isFile ? id : path.join(id, '**'), {
+        cwd: base
+    }).filter(function(id) {
+        return fs.statSync(path.join(base, id)).isFile()
+    }).map(function(id) {
+        return {
             id: id.replace('.js', ''),
-            uri: uri
-        })
-    } else {
-        metas = glob.sync(path.join(id, '**'), {
-            cwd: base
-        }).filter(function(id) {
-            return fs.statSync(path.join(base, id)).isFile()
-        }).map(function(id) {
-            return {
-                id: id.replace('.js', ''),
-                uri: path.join(base, id)
-            }
-        })
-    }
+            originId: id,
+            uri: path.join(base, id)
+        }
+    })
     return metas
 }
 
 function builder(input, options) {
     console.log('BUILDING: %s', helper.color(input))
 
-    var options = helper.extend({}, defaults, options)
+    var options = Module.data = helper.extend({}, Module.defaults, options)
+
     var metas = getMetas(input, options.base)
 
     metas.forEach(function(meta) {
         var logText = 'BUILD TO %s OK.'
-        var dest = path.join(options.base, options.dest, meta.id)
+        var dest = path.join(options.base, options.dest, meta.originId)
         dest = cmd.iduri.appendext(dest)
 
         if (path.extname(meta.uri) === '.js') {
-            var mod = Module.get(meta, options)
+            var mod = Module.get(meta)
             if (mod.factory) {
                 builder.saveFile(dest, mod.factory, logText)
             }
@@ -84,17 +66,8 @@ helper.extend(builder, {
         if (!logText) {
             logText = 'SAVE %s OK.'
         }
-        console.log(logText, helper.color(filepath))
+        console.log(logText, helper.color(cmd.iduri.normalize(filepath)))
     }
 })
 
 module.exports = builder
-
-// builder('amrio', {
-//     base: 'test/assets',
-//     exclude: ['$', 'bootstrap']
-// })
-
-// builder('biz', {
-//     base: 'test/assets'
-// })

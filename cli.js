@@ -48,7 +48,7 @@ function main() {
     var options = getOptions()
     // options.alias = getAlias(options.alias)
 
-    options.paths || (options.paths = ['sea-modules'])
+    options.paths || (options.paths = ['sea-modules', './'])
     options.all || (options.all = false)
     console.log('Build options:')
     console.log('src: %s', options.src)
@@ -56,11 +56,11 @@ function main() {
     console.log('paths: %s', options.paths)
     console.log('all: %s\n', options.all)
 
-    builder({
-        src: options.src,
+    builder(options.src, {
         dest: options.dest,
         paths: options.paths,
-        all: options.all
+        all: options.all,
+        minify: options.minify
     })
 }
 

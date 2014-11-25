@@ -10,10 +10,8 @@ define("amrio/tips/index", [ "$", "bootstrap", "amrio/tools/index" ], function(r
             text && tools.log(text);
         }
     };
-});
-
-define("amrio/tips/style.css", [], function() {
-    seajs.importStyle('@import url("./base.css"); .ui-tips{ font-size: 12px; border: 1px #f00 solid; } .ui-tips-content{ background-color: #fff; }');
+});define("amrio/tips/style.css", [], function() {
+    seajs.importStyle('@import url("./base.css");\r\n\r\n.ui-tips{\r\n    font-size: 12px;\r\n    border: 1px #f00 solid;\r\n}\r\n.ui-tips-content{\r\n    background-color: #fff;\r\n}');
 });
 
 define("amrio/tips/helper", [], function(require, exports, module) {
