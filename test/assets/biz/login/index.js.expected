@@ -13,8 +13,10 @@ define("biz/login/index", [ "$", "angular", "bootstrap" ], function(require, exp
     require("./nocmd");
     require("./nocmd");
     require("./nocmd");
-});define("amrio/tips/style.css", [], function() {
-    seajs.importStyle('@import url("./base.css");\r\n\r\n.ui-tips{\r\n    font-size: 12px;\r\n    border: 1px #f00 solid;\r\n}\r\n.ui-tips-content{\r\n    background-color: #fff;\r\n}');
+});
+
+define("amrio/tips/style.css", [], function() {
+    seajs.importStyle('@import url("./base.css");\n\n.ui-tips{\n    font-size: 12px;\n    border: 1px #f00 solid;\n}\n.ui-tips-content{\n    background-color: #fff;\n}');
 });
 
 define("amrio/tips/index", [], function(require, exports, module) {
@@ -60,7 +62,7 @@ define("biz/login/error-msg", [], function(require, exports, module) {
 undefined;
 
 define("biz/login/style.css", [], function() {
-    seajs.importStyle(".ui-tips{\r\n    color: #eee;\r\n    border: 1px #666 solid;\r\n}");
+    seajs.importStyle(".ui-tips{\n    color: #eee;\n    border: 1px #666 solid;\n}");
 });
 
 (function() {

@@ -22,7 +22,7 @@ function getMetas(id, base) {
         return fs.statSync(path.join(base, id)).isFile()
     }).map(function(id) {
         return {
-            id: id.replace('.js', ''),
+            id: id.replace(/\.js$/, ''),
             originId: id,
             uri: path.join(base, id)
         }
