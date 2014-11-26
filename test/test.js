@@ -4,7 +4,7 @@ var fs = require('fs'),
 var builder = require('../')
 
 function removeImpurity(file) {
-    return file.toString().replace(/\n|\r|\s/g, '')
+    return file.toString().replace(/(\n|\r|\s)/g, '')
 }
 describe('builder', function() {
     before(function() {

@@ -104,7 +104,7 @@ helper.extend(Module.prototype, {
             }
         })
         return {
-            id: id.replace('.js', ''),
+            id: id.replace(/\.js$/, ''),
             uri: uri
         }
     },
