@@ -4,7 +4,7 @@ var fs = require('fs'),
 var builder = require('../')
 
 function removeImpurity(file) {
-    return file.toString().replace(/(\n|\r|\s)/g, '')
+    return file.toString().replace(/\s/g, '')
 }
 
 describe('builder', function() {
@@ -19,7 +19,7 @@ describe('builder', function() {
         })
         var expected = fs.readFileSync('amrio/tips/index.js.expected')
         var actual = fs.readFileSync('sea-modules/amrio/tips/index.js')
-        assert.strictEqual(removeImpurity(actual), removeImpurity(expected))
+        assert.equal(removeImpurity(actual), removeImpurity(expected))
     })
 
     it('builder all', function() {
@@ -30,6 +30,6 @@ describe('builder', function() {
         })
         var expected = fs.readFileSync('biz/login/index.js.expected')
         var actual = fs.readFileSync('sea-modules/biz/login/index.js')
-        assert.strictEqual(removeImpurity(actual), removeImpurity(expected))
+        assert.equal(removeImpurity(actual), removeImpurity(expected))
     })
 })

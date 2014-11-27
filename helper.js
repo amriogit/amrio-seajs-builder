@@ -4,6 +4,7 @@ var OP = Object.prototype
 var AP = Array.prototype
 
 var helper = {
+    noop: function() {},
     type: function(obj) {
         return OP.toString.call(obj).slice(8, -1)
     },
@@ -17,15 +18,18 @@ var helper = {
         var args = AP.slice.call(arguments, 0)
         var dest = args.shift()
 
-        if(!dest) {
+        if (!dest) {
             return dest
         }
-        
+
         args.forEach(function(src) {
             if (!src) return
             Object.keys(src).map(function(k) {
                 if (helper.isObject(dest[k]) && helper.isObject(src[k])) {
                     helper.extend(dest[k], src[k])
+
+                } else if (Array.isArray(dest[k]) && Array.isArray(src[k])) {
+                    dest[k] = dest[k].concat(src[k])
 
                 } else {
                     dest[k] = src[k]
@@ -48,12 +52,17 @@ var helper = {
     },
     asyncEachSeries: function(array, iterator, callback) {
         var index = 0
+        callback && (callback = helper.noop)
 
         function next() {
             if (index >= array.length) {
                 callback()
             } else {
-                iterator(array[index++], next)
+                var isCalled = false
+                iterator(array[index++], function() {
+                    isCalled || next()
+                    isCalled = true
+                })
             }
         }
 
@@ -62,6 +71,7 @@ var helper = {
     asyncEach: function(array, iterator, callback) {
         var index = 0
         var len = array.length
+        callback && (callback = helper.noop)
 
         function done() {
             if (++index >= len) {
@@ -73,7 +83,11 @@ var helper = {
             callback()
         } else {
             array.forEach(function(item) {
-                iterator(item, done)
+                var isCalled = false
+                iterator(item, function() {
+                    isCalled || done()
+                    isCalled = true
+                })
             })
         }
     }
