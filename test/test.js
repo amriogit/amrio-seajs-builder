@@ -3,9 +3,10 @@ var fs = require('fs'),
 
 var builder = require('../')
 
-function removeImpurity(file) {
-    
-    return file.toString().replace(/\s/g, '')
+function fileEqual(uri1, uri2) {
+    var f1 = fs.readFileSync(uri1).toString()
+    var f2 = fs.readFileSync(uri2).toString()
+    return f1 == f2
 }
 
 describe('builder', function() {
@@ -18,9 +19,7 @@ describe('builder', function() {
             all: false,
             minify: false
         })
-        var expected = fs.readFileSync('amrio/tips/index.js.expected')
-        var actual = fs.readFileSync('sea-modules/amrio/tips/index.js')
-        assert.equal(removeImpurity(actual), removeImpurity(expected))
+        assert.ok(fileEqual('amrio/tips/index.js.expected', 'sea-modules/amrio/tips/index.js'))
     })
 
     it('builder all', function() {
@@ -29,8 +28,6 @@ describe('builder', function() {
             minify: false,
             exclude: ['$', 'angular']
         })
-        var expected = fs.readFileSync('biz/login/index.js.expected')
-        var actual = fs.readFileSync('sea-modules/biz/login/index.js')
-        assert.equal(removeImpurity(actual), removeImpurity(expected))
+        assert.ok(fileEqual('biz/login/index.js.expected', 'sea-modules/biz/login/index.js'))
     })
 })
