@@ -6,7 +6,7 @@ var builder = require('../')
 function fileEqual() {
     var result = false
     Array.prototype.slice.call(arguments, 0).map(function(uri) {
-        return fs.readFileSync(uri).toString().replace(/[\s\\r\\n]/g, '')
+        return fs.readFileSync(uri).toString().replace(/\s|\\r|\\n/g, '')
     }).reduce(function(prev, curr) {
         result = prev === curr
         assert.equal(curr, prev, 'FILE NOT EQUAL')
@@ -17,7 +17,7 @@ function fileEqual() {
 }
 
 describe('builder', function() {
-    
+
     before(function() {
         process.chdir('test/assets')
     })
