@@ -3,7 +3,7 @@ var fs = require('fs'),
 
 var builder = require('../')
 
-function fileEquel() {
+function fileEqual() {
     var result = false
 
     Array.prototype.slice.call(arguments, 0).map(function(uri) {
@@ -27,7 +27,7 @@ describe('builder', function() {
             minify: false
         })
 
-        assert.ok(fileEquel('amrio/tips/index.js.expected', 'sea-modules/amrio/tips/index.js'))
+        assert.ok(fileEqual('amrio/tips/index.js.expected', 'sea-modules/amrio/tips/index.js'))
     })
 
     it('builder all', function() {
@@ -37,6 +37,6 @@ describe('builder', function() {
             exclude: ['$', 'angular']
         })
 
-        assert.ok(fileEquel('biz/login/index.js.expected', 'sea-modules/biz/login/index.js'))
+        assert.ok(fileEqual('biz/login/index.js.expected', 'sea-modules/biz/login/index.js'))
     })
 })
