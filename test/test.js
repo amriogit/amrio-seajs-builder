@@ -3,23 +3,31 @@ var fs = require('fs'),
 
 var builder = require('../')
 
-function removeImpurity(file) {
-    return file.toString().replace(/[(\\r)(\\n)(\<CR\>)]/g, '')
+function fileEquel() {
+    var result = false
+
+    Array.prototype.slice.call(arguments, 0).map(function(uri) {
+        return fs.readFileSync(uri).toString().replace(/[\s\\r\\n]/g, '')
+    }).reduce(function(prev, curr) {
+        result = prev === curr
+        return curr
+    })
+
+    return result
 }
 
 describe('builder', function() {
     before(function() {
         process.chdir('test/assets')
     })
-    
+
     it('builder relative', function() {
         builder('amrio', {
             all: false,
             minify: false
         })
-        var expected = fs.readFileSync('amrio/tips/index.js.expected')
-        var actual = fs.readFileSync('sea-modules/amrio/tips/index.js')
-        assert.equal(removeImpurity(actual), removeImpurity(expected))
+
+        assert.ok(fileEquel('amrio/tips/index.js.expected', 'sea-modules/amrio/tips/index.js'))
     })
 
     it('builder all', function() {
@@ -28,8 +36,7 @@ describe('builder', function() {
             minify: false,
             exclude: ['$', 'angular']
         })
-        var expected = fs.readFileSync('biz/login/index.js.expected')
-        var actual = fs.readFileSync('sea-modules/biz/login/index.js')
-        assert.equal(removeImpurity(actual), removeImpurity(expected))
+
+        assert.ok(fileEquel('biz/login/index.js.expected', 'sea-modules/biz/login/index.js'))
     })
 })
