@@ -10,7 +10,7 @@ function fileEquel() {
         return fs.readFileSync(uri).toString().replace(/[\s\\r\\n]/g, '')
     }).reduce(function(prev, curr) {
         result = prev === curr
-        return curr
+        return prev
     })
 
     return result
