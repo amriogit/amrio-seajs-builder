@@ -9,8 +9,8 @@ var cmd = require('cmd-util')
 var UglifyJS = require('uglify-js')
 var mkdirp = require('mkdirp')
 
-var helper = require('./helper')
-var Module = require('./module')
+var helper = require('./lib/helper')
+var Module = require('./lib/module')
 
 function getMetas(id, base) {
     var metas = []    
@@ -34,21 +34,23 @@ function builder(input, options) {
     console.log('BUILDING: %s', helper.color(input))
 
     var options = Module.data = helper.extend({}, Module.defaults, options)
-
     var metas = getMetas(input, options.base)
 
     metas.forEach(function(meta) {
         var logText = 'BUILD TO %s OK.'
         var dest = path.join(options.base, options.dest, meta.originId)
+
         dest = cmd.iduri.appendext(dest)
 
         if (path.extname(meta.uri) === '.js') {
             var mod = Module.get(meta)
+
             if (mod.factory) {
                 builder.saveFile(dest, mod.factory, logText)
             }
         } else {
             var file = fs.readFileSync(meta.uri)
+            
             if (file) {
                 logText = 'COPY TO %s OK.'
                 builder.saveFile(dest, file, logText)
