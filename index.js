@@ -60,6 +60,19 @@ function builder(input, options) {
 }
 
 helper.extend(builder, {
+    defaults: {
+        all: true,
+        minify: true,
+        base: './',
+        dest: 'sea-modules',
+        paths: ['sea-modules', './'],
+        exclude: [],
+        globals: [],
+        uglify: {
+            ascii_only: true
+        },
+        parser: {}
+    },
     UglifyJS: UglifyJS,
     Module: Module,
     saveFile: function(filepath, file, logText) {
