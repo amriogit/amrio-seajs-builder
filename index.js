@@ -33,7 +33,10 @@ function getMetas(id, base) {
 function builder(input, options) {
     console.log('BUILDING: %s', helper.color(input))
 
-    var options = Module.data = helper.extend({}, Module.defaults, options)
+    var options = helper.extend({}, builder.defaults, options)
+
+    Module.config(options)
+
     var metas = getMetas(input, options.base)
 
     metas.forEach(function(meta) {
@@ -61,17 +64,8 @@ function builder(input, options) {
 
 helper.extend(builder, {
     defaults: {
-        all: true,
-        minify: true,
         base: './',
-        dest: 'sea-modules',
-        paths: ['sea-modules', './'],
-        exclude: [],
-        globals: [],
-        uglify: {
-            ascii_only: true
-        },
-        parser: {}
+        dest: 'sea-modules'
     },
     UglifyJS: UglifyJS,
     Module: Module,

@@ -20,12 +20,14 @@ describe('builder', function() {
 
     before(function() {
         process.chdir('test/assets')
+        this.defined = []
     })
 
     it('builder relative', function() {
         builder('amrio', {
             all: false,
-            minify: false
+            minify: false,
+            defined: this.defined
         })
 
         fileEqual('amrio/tips/index.js.expected', 'sea-modules/amrio/tips/index.js')
@@ -35,7 +37,8 @@ describe('builder', function() {
         builder('biz/login/index.js', {
             all: true,
             minify: false,
-            exclude: ['$', 'angular']
+            exclude: ['$', 'angular'],
+            defined: this.defined
         })
 
         fileEqual('biz/login/index.js.expected', 'sea-modules/biz/login/index.js')
