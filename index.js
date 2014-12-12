@@ -13,10 +13,9 @@ var helper = require('./lib/helper')
 var Module = require('./lib/module')
 
 function getMetas(id, base) {
-    var metas = []    
-    var isFile = fs.statSync(path.join(base, id)).isFile()
-    
-    metas = glob.sync(isFile ? id : path.join(id, '**'), {
+    var metas = []
+
+    metas = glob.sync(id, {
         cwd: base
     }).filter(function(id) {
         return fs.statSync(path.join(base, id)).isFile()
@@ -51,9 +50,11 @@ function builder(input, options) {
             if (mod.factory) {
                 builder.saveFile(dest, mod.factory, logText)
             }
-        } else {
+        }
+
+        if (!options.ignoreOthers) {
             var file = fs.readFileSync(meta.uri)
-            
+
             if (file) {
                 logText = 'COPY TO %s OK.'
                 builder.saveFile(dest, file, logText)
