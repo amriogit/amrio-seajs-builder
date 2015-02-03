@@ -50,9 +50,7 @@ function builder(input, options) {
             if (mod.factory) {
                 builder.saveFile(dest, mod.factory, logText)
             }
-        }
-
-        if (!options.ignoreOthers) {
+        } else if (!options.ignoreOthers) {
             var file = fs.readFileSync(meta.uri)
 
             if (file) {
