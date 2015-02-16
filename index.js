@@ -14,7 +14,7 @@ var Module = require('./lib/module')
 
 function getMetas(id, base) {
     var metas = []
-
+    id = glob.hasMagic(id) ? id : path.join(id, '**')
     metas = glob.sync(id, {
         cwd: base
     }).filter(function(id) {

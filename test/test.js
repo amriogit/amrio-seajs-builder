@@ -24,7 +24,7 @@ describe('builder', function() {
     })
 
     it('builder relative', function() {
-        builder('amrio/**', {
+        builder('amrio', {
             all: false,
             minify: false,
             defined: this.defined
