@@ -18,29 +18,41 @@ function fileEqual() {
 
 describe('builder', function() {
 
-    before(function() {
-        process.chdir('test/assets')
-        this.defined = []
-    })
+    // before(function() {
+    //     process.chdir('test/assets')
+    //     this.defined = []
+    // })
 
-    it('builder relative', function() {
-        builder('amrio', {
-            all: false,
+    // xit('builder relative', function() {
+    //     builder('amrio', {
+    //         all: false,
+    //         minify: false,
+    //         defined: this.defined
+    //     })
+
+    //     fileEqual('amrio/tips/index.js.expected', 'sea-modules/amrio/tips/index.js')
+    // })
+
+    // xit('builder all', function() {
+    //     builder('biz/login/index.js', {
+    //         all: true,
+    //         minify: false,
+    //         exclude: ['$', 'angular'],
+    //         defined: this.defined
+    //     })
+
+    //     fileEqual('biz/login/index.js.expected', 'sea-modules/biz/login/index.js')
+    // })
+
+    it('builder TDD', function() {
+        var asb = require('../lib/builder')
+        asb('biz', {
+            base: 'test/assets',
+            dest: 'test/sea-modules',
+            paths: ['test/assets'],
+            exclude: ['$', 'angular', 'bootstrap'],
             minify: false,
-            defined: this.defined
+            isConcatAll: true
         })
-
-        fileEqual('amrio/tips/index.js.expected', 'sea-modules/amrio/tips/index.js')
-    })
-
-    it('builder all', function() {
-        builder('biz/login/index.js', {
-            all: true,
-            minify: false,
-            exclude: ['$', 'angular'],
-            defined: this.defined
-        })
-
-        fileEqual('biz/login/index.js.expected', 'sea-modules/biz/login/index.js')
     })
 })

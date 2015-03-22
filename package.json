@@ -4,7 +4,7 @@
   "description": "seajs module builder",
   "main": "./index.js",
   "scripts": {
-    "test": "mocha"
+    "test": "mocha -w"
   },
   "bin": {
     "asb": "./cli.js"
