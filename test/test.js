@@ -48,11 +48,11 @@ describe('builder', function() {
         var asb = require('../lib/builder')
         asb('biz', {
             base: 'test/assets',
-            dest: 'test/sea-modules',
+            dest: 'test/assets/sea-modules',
             paths: ['test/assets'],
             exclude: ['$', 'angular', 'bootstrap'],
-            minify: false,
-            isConcatAll: true
+            minify: true,
+            isConcatAll: false
         })
     })
 })
