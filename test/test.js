@@ -1,7 +1,7 @@
 var fs = require('fs'),
     assert = require('assert')
 
-var builder = require('../')
+var asb = require('../')
 
 function fileEqual() {
     var result = false
@@ -45,7 +45,6 @@ describe('builder', function() {
     // })
 
     it('builder TDD', function() {
-        var asb = require('../lib/builder')
         asb('biz', {
             base: 'test/assets',
             dest: 'test/assets/sea-modules',

@@ -1,81 +1,89 @@
 'use strict'
-
 var fs = require('fs'),
     path = require('path'),
-    util = require('util')
-
-var glob = require('glob')
-var cmd = require('cmd-util')
-var UglifyJS = require('uglify-js')
-var mkdirp = require('mkdirp')
+    util = require('util'),
+    glob = require('glob'),
+    mkdirp = require('mkdirp')
 
 var helper = require('./lib/helper')
 var Module = require('./lib/module')
+var parsers = require('./lib/parsers')
 
-function getMetas(id, base) {
-    var metas = []
-    id = glob.hasMagic(id) ? id : path.join(id, '**')
-    metas = glob.sync(id, {
-        cwd: base
-    }).filter(function(id) {
-        return fs.statSync(path.join(base, id)).isFile()
-    }).map(function(id) {
-        return {
-            id: id.replace(/\.js$/, ''),
-            originId: id,
-            uri: path.join(base, id)
-        }
-    })
-    return metas
-}
-
-function builder(input, options) {
-    console.log('BUILDING: %s', helper.color(input))
-
-    var options = helper.extend({}, builder.defaults, options)
-
-    Module.config(options)
-
-    var metas = getMetas(input, options.base)
-
-    metas.forEach(function(meta) {
-        var logText = 'BUILD TO %s OK.'
-        var dest = path.join(options.base, options.dest, meta.originId)
-
-        dest = cmd.iduri.appendext(dest)
-
-        if (path.extname(meta.uri) === '.js') {
-            var mod = Module.get(meta)
-
-            if (mod.factory) {
-                builder.saveFile(dest, mod.factory, logText)
-            }
-        } else if (!options.ignoreOthers) {
-            var file = fs.readFileSync(meta.uri)
-
-            if (file) {
-                logText = 'COPY TO %s OK.'
-                builder.saveFile(dest, file, logText)
-            }
-        }
-    })
-}
-
-helper.extend(builder, {
-    defaults: {
-        base: './',
-        dest: 'sea-modules'
+var defaults = {
+    base: './',
+    dest: './sea-modules',
+    paths: ['./'],
+    exclude: [],
+    parsers: parsers,
+    minify: true,
+    uglify: {
+        ascii_only: true
     },
-    UglifyJS: UglifyJS,
-    Module: Module,
-    saveFile: function(filepath, file, logText) {
-        mkdirp.sync(path.dirname(filepath))
-        fs.writeFileSync(filepath, file)
-        if (!logText) {
-            logText = 'SAVE %s OK.'
-        }
-        console.log(logText, helper.color(cmd.iduri.normalize(filepath)))
+    isConcatAll: false,
+    footer: '\n',
+    copyOther: true,
+
+    onResolve: null,
+    onFetch: null,
+    onLoad: null,
+    onTransport: null,
+    onConcat: null,
+    onPost: writeFile
+}
+
+function Builder(src, options) {
+    this.src = src
+    this.options = helper.extend({}, defaults, options)
+    this.init()
+}
+
+helper.extend(Builder.prototype, {
+    init: function() {
+        var srcPaths = this.getSrcPaths()
+        this.build(srcPaths)
+    },
+    getSrcPaths: function() {
+        var options = this.options
+        var pattern = glob.hasMagic(this.src) ? this.src : path.join(this.src, '**')
+        return glob.sync(pattern, {
+            cwd: options.base,
+            nodir: true
+        })
+    },
+    build: function(srcPaths) {
+        var self = this
+        var options = this.options
+        var dest = options.dest
+
+        srcPaths.forEach(function(filepath) {
+            var uri = path.resolve(self.options.base, filepath)
+            var ext = path.extname(uri)
+            var output = null
+
+            if (ext === '.js') {
+                var meta = {
+                    id: filepath.replace(/\.js$/, ''),
+                    uri: uri
+                }
+                var mod = Module.get(meta, options)
+                output = mod.result
+
+            } else if (options.copyOther) {
+                output = fs.readFileSync(uri)
+            }
+
+            if (output) {
+                self.options.onPost(path.join(dest, filepath), output)
+            }
+        })
     }
 })
 
-module.exports = builder
+function writeFile(filepath, file) {
+    mkdirp.sync(path.dirname(filepath))
+    fs.writeFileSync(filepath, file)
+}
+
+module.exports = function(src, options) {
+    return new Builder(src, options)
+}

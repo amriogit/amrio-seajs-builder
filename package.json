@@ -4,7 +4,7 @@
   "description": "seajs module builder",
   "main": "./index.js",
   "scripts": {
-    "test": "mocha -w"
+    "test": "mocha"
   },
   "bin": {
     "asb": "./cli.js"
@@ -14,7 +14,6 @@
   },
   "license": "MIT",
   "dependencies": {
-    "cmd-util": "^0.3.13",
     "commander": "^2.3.0",
     "glob": "^4.0.6",
     "mkdirp": "^0.5.0",

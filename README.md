@@ -38,7 +38,7 @@ npm install -g amrio-seajs-builder
 
 ### 常规用法
 ```
-asb -s amrio
+asb -s amrio/**
 ```  
 `-s` 参数是指定构建源文件/文件夹的路径，这条命令会尝试找到当前执行 `abs` 命令目录下的 `./amrio` 文件夹，   
 并且把里面 `.js, .css` 模块文件使用默认构建范围（相对模块）进行构建。   
@@ -47,28 +47,28 @@ asb -s amrio
 
 #### 常规构建
 ```
-asb -s amrio
+asb -s amrio/**
 ```
 #### 构建指定文件/文件夹，多个需要用 “,” 分开
 ```
-asb -s amrio,biz/mix/validation.js
+asb -s amrio/**,biz/mix/validation.js
 ```
 
 #### 使用 all 构建范围构建到指定目录
 ```
-asb -s amrio -d ../../custom --all
+asb -s amrio/** -d ../../custom --all
 ```
 
 #### 使用 -p 指定构建时文件合并的基础查找路径，和 nodejs 的 node_modules 功能类似，多个 paths 使用 “,” 分开
 ```
-asb -s amrio -p ../../myLib,my-module,../sea-modules
+asb -s amrio/** -p ../../myLib,my-module,../sea-modules
 ```
 
 ### nodejs API
 ```js
 var builder = require('amrio-seajs-builder')
 
-builder('amrio', {
+builder('amrio/**', {
     base: './',
     dest: './sea-modules',
     paths: ['../my-modules', 'sea-modules', 'lib'],
