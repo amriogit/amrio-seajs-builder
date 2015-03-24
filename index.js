@@ -15,19 +15,13 @@ var defaults = {
     paths: ['./'],
     exclude: [],
     parsers: parsers,
+    all: false,
     minify: true,
+    copyOther: true,
+    footer: '\n',
     uglify: {
         ascii_only: true
     },
-    isConcatAll: false,
-    footer: '\n',
-    copyOther: true,
-
-    onResolve: null,
-    onFetch: null,
-    onLoad: null,
-    onTransport: null,
-    onConcat: null,
     onPost: writeFile
 }
 
