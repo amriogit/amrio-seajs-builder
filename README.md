@@ -1,6 +1,7 @@
 # amrio-seajs-builder
 amrio-seajs-builder 是一个 **CMD** 模块构建工具，目前只是用来和 seajs 配套使用。   
 
+[![Build Status](https://travis-ci.org/amriogit/amrio-seajs-builder.svg)](https://travis-ci.org/amriogit/amrio-seajs-builder)
 
 >此项目的目的是为了把 `transport` 与 `concat` 任务融合在一起，避免产生过多中间文件。避免过多概念，降低构建难度。
 

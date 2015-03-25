@@ -1,6 +1,6 @@
 {
   "name": "amrio-seajs-builder",
-  "version": "1.0.0",
+  "version": "0.0.11",
   "description": "seajs module builder",
   "main": "./index.js",
   "scripts": {
