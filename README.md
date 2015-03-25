@@ -1,11 +1,21 @@
-# amrio-seajs-builder
-amrio-seajs-builder 是一个 **CMD** 模块构建工具，目前只是用来和 seajs 配套使用。   
+# amrio-seajs-builder 
 
-[![Build Status](https://travis-ci.org/amriogit/amrio-seajs-builder.svg)](https://travis-ci.org/amriogit/amrio-seajs-builder)
+[![Build Status][travis-image]][travis-url] [![NPM version][npm-image]][npm-url] [![Downloads][download-image]][npm-url] [![Dependency Status][dependency-image]][dependency-url]
 
->此项目的目的是为了把 `transport` 与 `concat` 任务融合在一起，避免产生过多中间文件。避免过多概念，降低构建难度。
+amrio-seajs-builder 一个 **CMD** 模块构建工具。   
 
->运行原理还是和 [grunt-cmd-transport](https://www.npmjs.org/package/grunt-cmd-transport)、 [grunt-cmd-concat](https://www.npmjs.org/package/grunt-cmd-concat) 运行的原理一致，在这之上加了一些特性。
+>此项目的目的是为了把 `transport` 与 `concat` 任务融合在一起，减少中间文件产生，提升性能。避免过多概念，降低构建难度。
+
+>运行原理与 [grunt-cmd-transport](https://www.npmjs.org/package/grunt-cmd-transport)、 [grunt-cmd-concat](https://www.npmjs.org/package/grunt-cmd-concat) 保持一致，并在这之上加了一些特性。
+   
+## 特性：  
+
+* `transport` 和 `concat` 过程没有分离，采用递归查找出所有依赖。
+
+* `transport` 产生的文件直接缓存在内存中，避免 `transport` 中间文件写入，提升了些性能？（100 多个文件，只减少了 1 秒左右）   
+
+* 已经合并在一起的依赖不会再出现在入口模块的依赖数组里面了，入口模块的依赖数组里只会出现没有合并进来的依赖。
+这样可以让文件看起来小一些，有些模块依赖几十个依赖项，`transport` 后又会产生把这几十个依赖放入依赖数组里，如果这些模块已经被合并，是没有必要重复出现在依赖数组里的（有 gzip，貌似重复也没太大关系，本人测试开启 gzip 这样做能减少 1K 左右）
 
 目前只支持匿名模块的构建，如果已经是具名模块，则当做普通文件对待。
 ``` js
@@ -19,22 +29,13 @@ define("biz/login/index", ["amrio/tips/style.css", "amrio/tips/index"], function
     // code...
 })
 ```
-   
-## 特性：  
 
-* `transport` 和 `concat` 过程没有分离，采用递归查找出所有依赖。
-
-* `transport` 产生的文件直接缓存在内存中，避免 `transport` 中间文件写入，提升了些性能？（100 多个文件，只减少了 1 秒左右）   
-
-* 已经合并在一起的依赖不会再出现在入口模块的依赖数组里面了，入口模块的依赖数组里只会出现没有合并进来的依赖。
-这样可以让文件看起来小一些，有些模块依赖几十个依赖项，`transport` 后又会产生把这几十个依赖放入依赖数组里，如果这些模块已经被合并，是没有必要重复出现在依赖数组里的（有 gzip，貌似重复也没太大关系，本人测试开启 gzip 这样做能减少 1K 左右）
- 
 PS: 非常感谢 [__seajs__](http://seajs.org) 和它配套的自定义构建工具 [grunt-cmd-transport](https://www.npmjs.org/package/grunt-cmd-transport)、 [grunt-cmd-concat](https://www.npmjs.org/package/grunt-cmd-concat)
 
 ## 安装 amrio-seajs-builder
 此模块需要全局安装，以便使用全局命令 `asb`
 ```
-npm install -g amrio-seajs-builder
+npm install amrio-seajs-builder -g
 ```
 
 ##  命令行使用
@@ -81,6 +82,10 @@ asb -s amrio --no-minify
 ```
 
 # nodejs API
+
+```
+npm install amrio-seajs-builder --save
+```
 
 ## 用法
 ```js
@@ -233,3 +238,11 @@ Default: `false`
 * EMAIL [amriogm@gmail.com](mailto:amriogm@gmail.com)  
 * QQ 841830150  
 * github [https://github.com/amriogit/amrio-seajs-builder](https://github.com/amriogit/amrio-seajs-builder)
+
+[travis-image]: https://travis-ci.org/amriogit/amrio-seajs-builder.svg
+[travis-url]: https://travis-ci.org/amriogit/amrio-seajs-builder
+[npm-image]: https://badge.fury.io/js/amrio-seajs-builder.svg
+[npm-url]: https://www.npmjs.com/package/amrio-seajs-builder
+[dependency-image]: https://david-dm.org/amriogit/amrio-seajs-builder.svg
+[dependency-url]: https://david-dm.org/amriogit/amrio-seajs-builder
+[download-image]: http://img.shields.io/npm/dm/amrio-seajs-builder.svg

@@ -1,6 +1,6 @@
 {
   "name": "amrio-seajs-builder",
-  "version": "0.0.11",
+  "version": "1.0.0",
   "description": "seajs module builder",
   "main": "./index.js",
   "scripts": {
@@ -10,7 +10,7 @@
     "asb": "./cli.js"
   },
   "author": {
-    "name": "amrio"
+    "name": "Amrio"
   },
   "license": "MIT",
   "dependencies": {
