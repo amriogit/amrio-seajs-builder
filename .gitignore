@@ -17,4 +17,4 @@ node_modules
 dist
 tmp
 
-test/assets/sea-modules
+test/dist

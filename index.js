@@ -10,9 +10,9 @@ var Module = require('./lib/module')
 var parsers = require('./lib/parsers')
 
 var defaults = {
-    base: './',
-    dest: './sea-modules',
-    paths: ['./'],
+    base: process.cwd(),
+    dest: path.join(process.cwd(), 'sea-modules'),
+    paths: [process.cwd()],
     exclude: [],
     parsers: parsers,
     all: false,
@@ -22,12 +22,14 @@ var defaults = {
     uglify: {
         ascii_only: true
     },
+    log: false,
     onPost: writeFile
 }
 
 function Builder(src, options) {
     this.src = src
     this.options = helper.extend({}, defaults, options)
+    helper.log(this.options.log, util.format('asb %s start...', helper.color(this.src)))
     this.init()
 }
 
@@ -39,6 +41,26 @@ helper.extend(Builder.prototype, {
     getSrcPaths: function() {
         var options = this.options
         var pattern = glob.hasMagic(this.src) ? this.src : path.join(this.src, '**')
+
+        if (glob.hasMagic(this.src)) {
+            pattern = this.src
+        } else {
+            var uri = path.join(options.base, this.src)
+            var isExists = fs.existsSync(uri)
+
+            if (!isExists) {
+                return []
+            }
+
+            var stat = fs.statSync(uri)
+            if (stat.isFile() && path.extname(this.src) === '.js') {
+                pattern = this.src
+            } else if (stat.isDirectory()) {
+                pattern = path.join(this.src, '**')
+            } else {
+                return []
+            }
+        }
         return glob.sync(pattern, {
             cwd: options.base,
             nodir: true
@@ -49,6 +71,8 @@ helper.extend(Builder.prototype, {
         var options = this.options
         var dest = options.dest
 
+        var startTime = +new Date()
+
         srcPaths.forEach(function(filepath) {
             var uri = path.resolve(self.options.base, filepath)
             var ext = path.extname(uri)
@@ -56,8 +80,8 @@ helper.extend(Builder.prototype, {
 
             if (ext === '.js') {
                 var meta = {
-                    id: filepath.replace(/\.js$/, ''),
-                    uri: uri
+                    id: helper.normalize(filepath.replace(/\.js$/, '')),
+                    uri: helper.normalize(uri)
                 }
                 var mod = Module.get(meta, options)
                 output = mod.result
@@ -70,6 +94,8 @@ helper.extend(Builder.prototype, {
                 self.options.onPost(path.join(dest, filepath), output)
             }
         })
+
+        helper.log(self.options.log, util.format('asb spend %s', helper.color(+new Date() - startTime + 'ms')))
     }
 })
 
@@ -79,5 +105,7 @@ function writeFile(filepath, file) {
 }
 
 module.exports = function(src, options) {
+    // 清理缓存
+    Module.cache = {}
     return new Builder(src, options)
 }

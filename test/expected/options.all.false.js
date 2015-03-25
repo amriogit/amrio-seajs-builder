@@ -11,11 +11,9 @@ define("amrio/tips/index", [ "$", "bootstrap", "amrio/tools/index" ], function(r
         }
     };
 });
-
 define("amrio/tips/style.css", [], function() {
-    seajs.importStyle('@import url("./base.css");\n\n.ui-tips{\n    font-size: 12px;\n    border: 1px #f00 solid;\n}\n.ui-tips-content{\n    background-color: #fff;\n}');
+    seajs.importStyle(".ui-tips{font-size:12px;border:1px solid red}.ui-tips-content{background-color:#fff}");
 });
-
 define("amrio/tips/helper", [], function(require, exports, module) {
     "use strict";
     module.exports = {
