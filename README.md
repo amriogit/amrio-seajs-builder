@@ -45,8 +45,8 @@ npm install amrio-seajs-builder -g
 ### 参数
 `-s, --src <path> `构建路径，必填项！  
 `-d, --dest <path> `部署路径 默认值：`./sea-modules`  
-`-p, --paths <path>` 模块的基础查找路径 默认值：`./sea-modules`  
-`--all` 构建模块范围，默认只构建相对模块 
+`-p, --paths <path>` 模块的基础查找路径 默认值：`[./, ./sea-modules]`  
+`--all` 合并模块范围，指定后相对模块和绝对模块都会被合并，默认只合并相对模块   
 `--no-minify` 关闭 `uglifyjs` 压缩  
 
 ### 用法

@@ -15,6 +15,7 @@ function resolve(uri) {
 function getOptions() {
     var program = require('commander')
     var pkg = require('./package.json')
+
     program.version(pkg.version)
         .option('-s, --src <path>', 'src path required')
         .option('-d, --dest <path>', 'dest path [./sea-modules]', './sea-modules')
@@ -25,7 +26,7 @@ function getOptions() {
                 return [resolve('sea-modules')]
             }
         })
-        .option('--all', 'concat include all scope')
+        .option('--all', 'concat relative and absolute module')
         .option('--no-minify', 'disabled minify')
         .parse(process.argv)
 
