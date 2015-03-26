@@ -3,21 +3,13 @@
 var path = require('path'),
     fs = require('fs'),
     util = require('util')
+    chalk = require('chalk')
+
 var asb = require('./')
+var H = require('./lib/helper')
 
-function getAlias(alias) {
-    var exists = fs.existsSync(alias)
-    if (exists) {
-        return JSON.parse(fs.readFileSync(alias).toString())
-    } else {
-        return {}
-    }
-}
-
-function completeSrc(inputSrc) {
-    return inputSrc.split(',').map(function(src) {
-        return fs.statSync(src).isDirectory() ? path.join(src, '**/*.*') : src
-    })
+function resolve(uri) {
+    return chalk.cyan(H.normalize(uri))
 }
 
 function getOptions() {
@@ -26,14 +18,13 @@ function getOptions() {
     program.version(pkg.version)
         .option('-s, --src <path>', 'src path required')
         .option('-d, --dest <path>', 'dest path [./sea-modules]', './sea-modules')
-        .option('-p, --paths <path>', 'same node_modules [./sea-modules]', function(val) {
+        .option('-p, --paths <path>', 'same node_modules [./, ./sea-modules]', function(val) {
             if (val) {
                 return val.split(',')
             } else {
-                return ['./sea-modules']
+                return [resolve('sea-modules')]
             }
         })
-        // .option('-a, --alias <path>', 'alias config file path [./alias.json]', './alias.json')
         .option('--all', 'concat include all scope')
         .option('--no-minify', 'disabled minify')
         .parse(process.argv)
@@ -44,24 +35,23 @@ function getOptions() {
     return program
 }
 
-function main() {
+new function() {
     var options = getOptions()
-    // options.alias = getAlias(options.alias)
 
     options.paths || (options.paths = ['./', 'sea-modules'])
     options.all || (options.all = false)
-    console.log('Build options:')
-    console.log('src: %s', options.src)
-    console.log('dest: %s', options.dest)
-    console.log('paths: %s', options.paths)
-    console.log('all: %s\n', options.all)
+    console.log('build options:')
+    console.log('src: %s', resolve(options.src))
+    console.log('dest: %s', resolve(options.dest))
+    console.log('paths: %s', resolve('[' + options.paths.join(', ') + ']'))
+    console.log('all: %s', chalk.cyan(options.all))
+    console.log('minify: %s\n', chalk.cyan(options.minify))
 
     asb(options.src, {
         dest: options.dest,
         paths: options.paths,
         all: options.all,
-        minify: options.minify
+        minify: options.minify,
+        log: true
     })
 }
-
-main()

@@ -3,7 +3,8 @@ var fs = require('fs'),
     path = require('path'),
     util = require('util'),
     glob = require('glob'),
-    mkdirp = require('mkdirp')
+    mkdirp = require('mkdirp'),
+    chalk = require('chalk')
 
 var helper = require('./lib/helper')
 var Module = require('./lib/module')
@@ -22,14 +23,14 @@ var defaults = {
     uglify: {
         ascii_only: true
     },
-    log: false,
+    log: true,
     onPost: writeFile
 }
 
 function Builder(src, options) {
     this.src = src
     this.options = helper.extend({}, defaults, options)
-    helper.log(this.options.log, util.format('asb %s start...', helper.color(this.src)))
+    helper.log(this.options.log, util.format('asb begin %s', chalk.cyan(this.src)))
     this.init()
 }
 
@@ -95,7 +96,9 @@ helper.extend(Builder.prototype, {
             }
         })
 
-        helper.log(self.options.log, util.format('asb spend %s', helper.color(+new Date() - startTime + 'ms')))
+        var buildFileCount = Object.keys(Module.cache).length
+        var spendTime = (+new Date() - startTime) + 'ms'
+        helper.log(self.options.log, util.format('asb spend %s build %s files\n', chalk.cyan(spendTime), chalk.cyan(buildFileCount)))
     }
 })
 

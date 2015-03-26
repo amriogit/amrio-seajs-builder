@@ -24,7 +24,8 @@ var baseOptions = {
     dest: distPath,
     paths: [basePath],
     minify: false,
-    all: false
+    all: false,
+    log: false
 }
 
 describe('asb', function() {
@@ -170,7 +171,7 @@ describe('asb', function() {
         }))
     })
 
-    it('options.log: true', function() {
+    it('options.log: function', function() {
         asb('biz/login/index.js', H.extend({}, baseOptions, {
             log: function(text) {
                 should.exist(text)
