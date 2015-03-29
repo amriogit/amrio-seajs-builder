@@ -7,7 +7,7 @@ var fs = require('fs'),
     chalk = require('chalk')
 
 var helper = require('./lib/helper')
-var Module = require('./lib/module')
+var ModuleManager = require('./lib/module-manager')
 var parsers = require('./lib/parsers')
 
 var defaults = {
@@ -36,6 +36,7 @@ function Builder(src, options) {
 
 helper.extend(Builder.prototype, {
     init: function() {
+        this.moduleManager = new ModuleManager(this.options)
         var srcPaths = this.getSrcPaths()
         this.build(srcPaths)
     },
@@ -84,10 +85,10 @@ helper.extend(Builder.prototype, {
                     id: helper.normalize(filepath.replace(/\.js$/, '')),
                     uri: helper.normalize(uri)
                 }
-                var mod = Module.get(meta, options)
+                var mod = self.moduleManager.get(meta)
                 output = mod.result
 
-            } else if (options.copyOther) {
+            } else if (options.copyOther) { 
                 output = fs.readFileSync(uri)
             }
 
@@ -96,7 +97,7 @@ helper.extend(Builder.prototype, {
             }
         })
 
-        var buildFileCount = Object.keys(Module.cache).length
+        var buildFileCount = Object.keys(this.moduleManager.cache).length
         var spendTime = (+new Date() - startTime) + 'ms'
         helper.log(self.options.log, util.format('asb spend %s build %s files\n', chalk.cyan(spendTime), chalk.cyan(buildFileCount)))
     }
@@ -108,7 +109,5 @@ function writeFile(filepath, file) {
 }
 
 module.exports = function(src, options) {
-    // 清理缓存
-    Module.cache = {}
     return new Builder(src, options)
 }
