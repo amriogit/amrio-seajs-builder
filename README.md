@@ -10,9 +10,11 @@ amrio-seajs-builder 一个 **CMD** 模块构建工具。
    
 ## 特性：  
 
-* `transport` 和 `concat` 过程没有分离，采用递归查找出所有依赖。
+* `transport` 和 `concat` 过程没有分离，采用递归查找出所有依赖，合并所有能合并的文件，非 `CMD` 模块文件也不放过。
 
-* `transport` 产生的文件直接缓存在内存中，避免 `transport` 文件写入硬盘，可以提升些性能？（100 多个文件，只减少了 1 秒左右）   
+* `transport` 产生的文件直接缓存在内存中，避免 `transport` 文件写入硬盘，可以提升些性能？（177 个文件，能减少 1~2 秒，视机器性能而定）   
+
+* `transport` 与 `concat` 融合之后，之前可能出现的重复 concat 问题迎刃而解！因为依赖列表都是直接从 transport 的缓存信息里获取，concat 时不需要重新分析依赖，大大提升了合并文件的正确性，并且为下面的特性提供了强劲支持。
 
 * 已经合并在一起的依赖不会再出现在入口模块的依赖数组里面了，入口模块的依赖数组里只会出现没有合并进来的依赖。
 这样可以让文件看起来清爽些，有些模块依赖几十个，`transport` 后又会把这几十个依赖放入依赖数组里，如果这些模块已经被合并，其实是没有必要重复出现在依赖数组里的了。已经定义的模块可以直接 `require`
@@ -21,7 +23,8 @@ amrio-seajs-builder 一个 **CMD** 模块构建工具。
 
 * 内置了 `uglify` 压缩器，让模块压缩时不会一团揉在一起，这一切也都是为了让产出的文件变得更清爽。
 
-目前只支持匿名模块的构建，如果已经是具名模块，则当做普通文件对待。
+目前只支持匿名模块的构建，如果已经是具名模块，则当做普通 js 文件对待。
+普通非模块 js 文件也会被压缩处理，如果开启了压缩。并且也会被合并进依赖它的模块里。
 ``` js
 // 匿名模块会进行 transport concat 构建
 define(function(require, exports, module){
@@ -32,6 +35,12 @@ define(function(require, exports, module){
 define("biz/login/index", ["amrio/tips/style.css", "amrio/tips/index"], function(require, exports, module){
     // code...
 })
+
+// 普通 js 模块也会被压缩处理，如果开启了压缩。并且也会被合并进依赖它的模块里，
+// 使用了缓存策略，保证不会重复合并模块，这也是为什么让 transport 与 concat 融合在一起的最大原因
+new function() {
+    // code...
+}
 ```
 
 PS: 非常感谢 [__seajs__](http://seajs.org) 和它配套的自定义构建工具 [grunt-cmd-transport](https://www.npmjs.org/package/grunt-cmd-transport)、 [grunt-cmd-concat](https://www.npmjs.org/package/grunt-cmd-concat)
@@ -39,7 +48,7 @@ PS: 非常感谢 [__seajs__](http://seajs.org) 和它配套的自定义构建工
 ## 安装 amrio-seajs-builder
 此模块需要全局安装，以便使用全局命令 `asb`
 ```
-npm install amrio-seajs-builder -g
+npm i amrio-seajs-builder -g
 ```
 
 ##  命令行使用
@@ -87,8 +96,9 @@ asb -s amrio --no-minify
 
 # nodejs API
 
+## 安装
 ```
-npm install amrio-seajs-builder --save
+npm i amrio-seajs-builder --save
 ```
 
 ## 用法
@@ -217,7 +227,7 @@ Default: `true`
 Type: `string`  
 Default: `\n`
 
-concat 连接模块的 footer
+concat 连接模块的 footer（`[factory...].join(footer)`），让合并出来的文件更有条理。
 
 ##### uglify
 Type: `object`  
