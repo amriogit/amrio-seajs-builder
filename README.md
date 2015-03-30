@@ -4,7 +4,7 @@
 
 amrio-seajs-builder 一个 **CMD** 模块构建工具。   
 
->此项目的目的是为了把 `transport` 与 `concat` 任务融合在一起，减少中间文件产生，提升性能。避免过多概念，降低构建难度。
+>此项目的目的是为了把 `transport` 与 `concat` 任务融合在一起，没有 `transport`文件产生。免去过多概念，降低 `CMD` 构建难度。
 
 >运行原理与 [grunt-cmd-transport](https://www.npmjs.org/package/grunt-cmd-transport)、 [grunt-cmd-concat](https://www.npmjs.org/package/grunt-cmd-concat) 保持一致，并在这之上加了一些特性。
    
@@ -12,10 +12,14 @@ amrio-seajs-builder 一个 **CMD** 模块构建工具。
 
 * `transport` 和 `concat` 过程没有分离，采用递归查找出所有依赖。
 
-* `transport` 产生的文件直接缓存在内存中，避免 `transport` 中间文件写入，提升了些性能？（100 多个文件，只减少了 1 秒左右）   
+* `transport` 产生的文件直接缓存在内存中，避免 `transport` 文件写入硬盘，可以提升些性能？（100 多个文件，只减少了 1 秒左右）   
 
 * 已经合并在一起的依赖不会再出现在入口模块的依赖数组里面了，入口模块的依赖数组里只会出现没有合并进来的依赖。
-这样可以让文件看起来小一些，有些模块依赖几十个依赖项，`transport` 后又会产生把这几十个依赖放入依赖数组里，如果这些模块已经被合并，是没有必要重复出现在依赖数组里的（有 gzip，貌似重复也没太大关系，本人测试开启 gzip 这样做能减少 1K 左右）
+这样可以让文件看起来清爽些，有些模块依赖几十个，`transport` 后又会把这几十个依赖放入依赖数组里，如果这些模块已经被合并，其实是没有必要重复出现在依赖数组里的了。已经定义的模块可以直接 `require`
+
+* 多功能的 `exclude` 配置项，随心所欲的控制依赖列表，这一切都是为了让产出文件变得清爽。
+
+* 内置了 `uglify` 压缩器，让模块压缩时不会一团揉在一起，这一切也都是为了让产出的文件变得更清爽。
 
 目前只支持匿名模块的构建，如果已经是具名模块，则当做普通文件对待。
 ``` js
@@ -142,7 +146,7 @@ Default: `[process.cwd()]`
 Type: `boolean`  
 Default: `false`
 
-是否合并顶级模块，默认只合并相对模块
+是否合并绝对模块，默认只合并相对模块
 
 ##### minify
 Type: `boolean`  
@@ -157,7 +161,7 @@ Default: `[]`
 需要排除的模块，如果定义了 exclude 为数组，那么包含在数组里面的模块 id 就不会被处理了。
 如果是 functuon 那么会有点不一样
 
-###### function(id, meta)
+##### function(id, meta)
 Return Type: `boolean || null`  
 
 如果方法返回的是布尔值，那么返回 true 就会不处理这个模块 id 了，反之亦然。
@@ -167,12 +171,12 @@ Return Type: `boolean || null`
 
 例如：jquery 模块在加载的时候是最先定义的模块 id，那么后面的模块可以确保直接 require，那么 jquery 就可以不用出现在它们依赖数组里。
 
-####### id
+###### id
 Type: `string`  
 
 id 是当前模块要要找的依赖，可以通过判断 id 来动态的排除某些模块是否要被处理
 
-####### meta
+###### meta
 Type: `object`  
 
 meta 是当前模块的元数据，包含了 `meta.id meta.uri meta.deps, meta.factory`。
@@ -236,7 +240,6 @@ Default: `false`
 
 ## 联系
 * EMAIL [amriogm@gmail.com](mailto:amriogm@gmail.com)  
-* QQ 841830150  
 * github [https://github.com/amriogit/amrio-seajs-builder](https://github.com/amriogit/amrio-seajs-builder)
 
 [travis-image]: https://travis-ci.org/amriogit/amrio-seajs-builder.svg
