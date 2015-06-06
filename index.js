@@ -42,27 +42,14 @@ helper.extend(Builder.prototype, {
     },
     getSrcPaths: function() {
         var options = this.options
-        var pattern = glob.hasMagic(this.src) ? this.src : path.join(this.src, '**')
+        
+        var pattern = this.src
+        var ext = path.extname(pattern)
 
-        if (glob.hasMagic(this.src)) {
-            pattern = this.src
-        } else {
-            var uri = path.join(options.base, this.src)
-            var isExists = fs.existsSync(uri)
-
-            if (!isExists) {
-                return []
-            }
-
-            var stat = fs.statSync(uri)
-            if (stat.isFile() && path.extname(this.src) === '.js') {
-                pattern = this.src
-            } else if (stat.isDirectory()) {
-                pattern = path.join(this.src, '**')
-            } else {
-                return []
-            }
+        if (!ext && !glob.hasMagic(pattern)) {
+            pattern = path.join(pattern, '**')
         }
+
         return glob.sync(pattern, {
             cwd: options.base,
             nodir: true
