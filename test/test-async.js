@@ -1,11 +1,5 @@
 var fs = require('fs')
-var cluster = require('cluster')
 var ModuleManager = require('../lib/async/module-manager')
-
-if (cluster.isWorker) {
-    console.log('I am worker')
-    return
-}
 
 var moduleManager = new ModuleManager({
     base: './test/fixtures',
