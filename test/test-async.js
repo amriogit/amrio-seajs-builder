@@ -10,11 +10,13 @@ var moduleManager = new ModuleManager({
     }
 })
 
+moduleManager.on('error', function (err) {
+    console.error(err.stack)
+})
+
 moduleManager.get({
     id: 'mod/main'
 }).then(function(mod) {
     fs.writeFile('./test.js', mod.result)
 
-}).catch(function(err) {
-    console.error(err.stack)
 })
