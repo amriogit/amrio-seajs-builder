@@ -1,24 +1,22 @@
 var fs = require('fs')
-var ModuleManager = require('../lib/async/module-manager')
+var asb = require('../index')
 
-var moduleManager = new ModuleManager({
+var options = {
     base: './test/fixtures',
-    minify: false,
+    cwd: './test/fixtures/',
+    minify: true,
     all: true,
-    exclude: [],
+    uglify: {
+        compress: {
+            drop_console: true
+        }
+    },
+    exclude: ['T'],
     alias: {
         'T': 'amrio/tools/index'
     }
-})
+}
 
-moduleManager.on('error', function (err) {
-    console.error(err.stack)
-})
-
-moduleManager.get({
-    // id: 'mod/main',
-    uri: './test/fixtures/mod/main.js'
-}).then(function(mod) {
-    fs.writeFile('./test.js', mod.result)
-
+asb('**', options).then(function () {
+    console.log('asb finish')
 })

@@ -1,48 +1,48 @@
 'use strict'
-var fs = require('fs'),
-    path = require('path'),
-    util = require('util'),
-    glob = require('glob'),
-    mkdirp = require('mkdirp'),
-    chalk = require('chalk')
 
-var helper = require('./lib/helper')
-var ModuleManager = require('./lib/module-manager')
-var parsers = require('./lib/parsers')
+var fs = require('fs')
+var path = require('path')
+var util = require('util')
+var glob = require('glob')
+var mkdirp = require('mkdirp')
+var chalk = require('chalk')
 
-var defaults = {
-    base: process.cwd(),
-    dest: path.join(process.cwd(), 'sea-modules'),
-    paths: [process.cwd()],
-    exclude: [],
-    parsers: parsers,
-    all: false,
-    minify: true,
-    copyOther: true,
-    footer: '\n',
-    uglify: {
-        ascii_only: true
-    },
-    log: true,
-    onPost: writeFile
-}
+var ModuleManager = require('./lib/async/module-manager')
+var Module = require('./lib/async/module')
+var cmdTools = require('./lib/async/cmd-tools')
+var parsers = require('./lib/async/parsers')
+
+var H = require('./lib/helper')
 
 function Builder(src, options) {
+
+    this.options = H.extend({
+        cwd: './',
+        dest: './dist',
+        encoding: 'utf-8',
+        copyOther: true,
+        log: function(info) {
+            console.log(info.stack ? info.stack : info)
+        }
+    }, options)
+
     this.src = src
-    this.options = helper.extend({}, defaults, options)
-    helper.log(this.options.log, util.format('asb begin %s', chalk.cyan(this.src)))
-    this.init()
+
+    H.log(this.options.log, util.format('asb begin %s', chalk.cyan(this.src)))
+
+    return this.init()
 }
 
-helper.extend(Builder.prototype, {
+H.extend(Builder.prototype, {
     init: function() {
+        var self = this
+
         this.moduleManager = new ModuleManager(this.options)
-        var srcPaths = this.getSrcPaths()
-        this.build(srcPaths)
-    },
-    getSrcPaths: function() {
-        var options = this.options
-        
+
+        this.moduleManager.on('error', function(err) {
+            H.log(self.options.log, err)
+        })
+
         var pattern = this.src
         var ext = path.extname(pattern)
 
@@ -50,51 +50,79 @@ helper.extend(Builder.prototype, {
             pattern = path.join(pattern, '**')
         }
 
-        return glob.sync(pattern, {
-            cwd: options.base,
+        var filePaths = glob.sync(pattern, {
+            cwd: this.options.cwd,
             nodir: true
         })
+
+        return this.build(filePaths)
     },
-    build: function(srcPaths) {
+    build: function(filePaths) {
         var self = this
         var options = this.options
-        var dest = options.dest
 
         var startTime = +new Date()
 
-        srcPaths.forEach(function(filepath) {
-            var uri = path.resolve(self.options.base, filepath)
+        var rExtname = new RegExp('\\' + parsers.defaultExtname + '$')
+
+        var promises = filePaths.map(function(filepath) {
+
+            var dest = cmdTools.normalize(path.join(options.dest, filepath))
+            var uri = cmdTools.normalize(path.resolve(self.options.cwd, filepath))
             var ext = path.extname(uri)
-            var output = null
 
-            if (ext === '.js') {
+            if (ext === parsers.defaultExtname) {
                 var meta = {
-                    id: helper.normalize(filepath.replace(/\.js$/, '')),
-                    uri: helper.normalize(uri)
+                    uri: uri
                 }
-                var mod = self.moduleManager.get(meta)
-                output = mod.result
 
-            } else if (options.copyOther) { 
-                output = fs.readFileSync(uri)
-            }
+                return self.moduleManager.get(meta).then(function(module) {
+                    self.output(dest, module.result)
+                })
 
-            if (output) {
-                self.options.onPost(path.join(dest, filepath), output)
+            } else if (options.copyOther) {
+                return new Promise(function(resolve, reject) {
+                    fs.readFile(uri, function(err, file) {
+                        if (err) {
+                            reject(err)
+                        } else {
+                            self.output(dest, file)
+                            resolve()
+                        }
+                    })
+                })
             }
         })
 
-        var buildFileCount = Object.keys(this.moduleManager.cache).length
-        var spendTime = (+new Date() - startTime) + 'ms'
-        helper.log(self.options.log, util.format('asb spend %s build %s files\n', chalk.cyan(spendTime), chalk.cyan(buildFileCount)))
+        return Promise.all(promises).then(function() {
+
+            var count = Object.keys(self.moduleManager.cache).length
+            var spendTime = (+new Date() - startTime) + 'ms'
+            var message = util.format('asb spend %s build %s files\n', chalk.cyan(spendTime), chalk.cyan(count))
+
+            H.log(self.options.log, message)
+        })
+
+    },
+    output: function(dest, result) {
+        mkdirp(path.dirname(dest), function(err) {
+            if (err) {
+                throw err
+            } else {
+                fs.writeFile(dest, result)
+            }
+        })
     }
 })
 
-function writeFile(filepath, file) {
-    mkdirp.sync(path.dirname(filepath))
-    fs.writeFileSync(filepath, file)
-}
-
-module.exports = function(src, options) {
+function main(src, options) {
     return new Builder(src, options)
 }
+
+main.parsers = parsers
+main.ModuleManager = ModuleManager
+main.Module = Module
+main.cmdTools = cmdTools
+main.helper = H
+
+module.exports = main
