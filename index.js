@@ -37,9 +37,9 @@ H.extend(Builder.prototype, {
     init: function() {
         var self = this
 
-        this.moduleManager = new ModuleManager(this.options)
+        this.manager = new ModuleManager(this.options)
 
-        this.moduleManager.on('error', function(err) {
+        this.manager.on('error', function(err) {
             H.log(self.options.log, err)
         })
 
@@ -69,25 +69,26 @@ H.extend(Builder.prototype, {
 
             var dest = cmdTools.normalize(path.join(options.dest, filepath))
             var uri = cmdTools.normalize(path.resolve(self.options.cwd, filepath))
-            var ext = path.extname(uri)
+            var ext = path.extname(filepath)
 
             if (ext === parsers.defaultExtname) {
                 var meta = {
                     uri: uri
                 }
 
-                return self.moduleManager.get(meta).then(function(module) {
-                    self.output(dest, module.result)
+                return self.manager.get(meta).then(function(module) {
+                    return self.output(dest, module.result)
                 })
 
-            } else if (options.copyOther) {
+            }
+
+            if (options.copyOther) {
                 return new Promise(function(resolve, reject) {
                     fs.readFile(uri, function(err, file) {
                         if (err) {
                             reject(err)
                         } else {
-                            self.output(dest, file)
-                            resolve()
+                            self.output(dest, file).then(resolve, reject)
                         }
                     })
                 })
@@ -96,7 +97,7 @@ H.extend(Builder.prototype, {
 
         return Promise.all(promises).then(function() {
 
-            var count = Object.keys(self.moduleManager.cache).length
+            var count = Object.keys(self.manager.cache).length
             var spendTime = (+new Date() - startTime) + 'ms'
             var message = util.format('asb spend %s build %s files\n', chalk.cyan(spendTime), chalk.cyan(count))
 
@@ -105,12 +106,22 @@ H.extend(Builder.prototype, {
 
     },
     output: function(dest, result) {
-        mkdirp(path.dirname(dest), function(err) {
-            if (err) {
-                throw err
-            } else {
-                fs.writeFile(dest, result)
-            }
+        return new Promise(function(resolve, reject) {
+            
+            mkdirp(path.dirname(dest), function(err) {
+                if (err) {
+                    reject(err)
+                } else {
+                    fs.writeFile(dest, result, function(err) {
+                        if (err) {
+                            reject(err)
+                        } else {
+                            resolve()
+                        }
+                    })
+                }
+            })
+
         })
     }
 })

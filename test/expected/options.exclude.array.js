@@ -1,4 +1,4 @@
-define("biz/login/index", [ "biz/login/error-msg", "$", "angular", "bootstrap" ], function(require, exports, module) {
+define("biz/login/index", [ "$", "angular", "biz/login/error-msg", "bootstrap" ], function(require, exports, module) {
     "use strict";
     var $ = require("$");
     var angular = require("angular");

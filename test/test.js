@@ -13,112 +13,134 @@ var distPath = 'test/dist'
 
 function fileEqual(expectedPath, actualPath, buildPath) {
     buildPath || (buildPath = distPath)
-    var rFileSpace = /(\s|\\r|\\n)/g
+    var rFileSpace = /(\s|\\r|\\n|\\t)/g
     var expected = fs.readFileSync(path.join('test/expected', expectedPath)).toString().replace(rFileSpace, '')
     var actual = fs.readFileSync(path.join(buildPath, actualPath)).toString().replace(rFileSpace, '')
-    actual.should.be.equal(expected)
+    
+	return actual.should.be.equal(expected)
 }
 
-var baseOptions = {
-    base: basePath,
-    dest: distPath,
-    paths: [basePath],
-    minify: false,
-    all: false,
-    log: false
+function genOptions (options) {
+	return H.extend({
+		cwd: basePath,
+	    base: basePath,
+	    dest: distPath,
+	    minify: false,
+	    exclude: ["$", "angular", "bootstrap"],
+	    all: false
+	}, options)
 }
 
 describe('asb', function() {
 
-    afterEach(function() {
-        del.sync(distPath)
+    beforeEach(function() {
+        // del.sync(distPath)
     })
 
-    it('options.all: false', function() {
-        asb('amrio/tips/index.js', H.extend({}, baseOptions, {
+    it('options.all: false', function(done) {
+        asb('amrio/tips/index.js', genOptions({
             all: false
-        }))
-
-        fileEqual('options.all.false.js', 'amrio/tips/index.js')
+        })).then(function (module) {
+        	fileEqual('options.all.false.js', 'amrio/tips/index.js')
+        }).then(done).catch(done)
     })
 
-    it('options.all: true', function() {
+    it('options.all: true', function(done) {
 
-        asb('biz/login/index.js', H.extend({}, baseOptions, {
+        asb('biz/login/index.js', genOptions({
             all: true
-        }))
-
-        fileEqual('options.all.true.js', 'biz/login/index.js')
+        })).then(function (module) {
+        	fileEqual('options.all.true.js', 'biz/login/index.js')
+        }).then(done).catch(done)
     })
 
-    it('options.base: test/fixtures/biz', function() {
+    it('options.cwd: test/fixtures/biz', function(done) {
 
-        asb('login/index.js', H.extend({}, baseOptions, {
-            base: 'test/fixtures/biz',
-            paths: ['test/fixtures/biz']
-        }))
+        asb('login/index.js', genOptions({
+        	cwd: 'test/fixtures/biz',
+        	base: 'test/fixtures/biz'
+        })).then(function (module) {
+        	fileEqual('options.base.js', 'login/index.js')
+        }).then(done).catch(done)
 
-        fileEqual('options.base.js', 'login/index.js')
     })
 
-    it('options.dest: build', function() {
+    it('options.dest: build', function(done) {
         var buildPath = 'test/build'
 
-        asb('amrio/tips/index.js', H.extend({}, baseOptions, {
+        asb('amrio/tips/index.js', genOptions({
             dest: buildPath,
             all: false
-        }))
-
-        fileEqual('options.all.false.js', 'amrio/tips/index.js', buildPath)
-
-        del.sync(buildPath)
+        })).then(function (module) {
+        	fileEqual('options.all.false.js', 'amrio/tips/index.js', buildPath)
+        	del.sync(buildPath)
+        }).then(done).catch(done)
     })
 
-    it('options.paths: [test]', function() {
-        var buildPath = 'test/build'
+    it('options.paths: [test]', function(done) {
 
-        asb('fixtures/biz/login/index.js', H.extend({}, baseOptions, {
-            base: 'test',
-            paths: ['test', 'test/fixtures'],
-            all: true
-        }))
-
-        fileEqual('options.paths.js', 'fixtures/biz/login/index.js')
-    })
-
-    it('options.exclude: [$]', function() {
-        asb('biz/login/index.js', H.extend({}, baseOptions, {
+        asb('fixtures/biz/login/index.js', genOptions({
+        	cwd: 'test',
             all: true,
-            exclude: ['biz/login/error-msg']
-        }))
+            paths: {
+            	'fixtures': './fixtures'
+            }
+        })).then(function (module) {
+        	fileEqual('options.paths.js', 'fixtures/biz/login/index.js')
+        }).then(done).catch(done)
 
-        fileEqual('options.exclude.array.js', 'biz/login/index.js')
     })
 
-    it('options.exclude: function return null', function() {
-        asb('biz/login/index.js', H.extend({}, baseOptions, {
+    it('options.alias: $', function(done) {
+
+        var a = asb('amrio/tips/index.js', genOptions({
+        	exclude: ["angular", "bootstrap"],
+            alias: {
+            	'$': 'biz/login/other'
+            },
+            all: true
+        })).then(function (module) {
+        	fileEqual('options.alias.js', 'amrio/tips/index.js')
+
+        }).then(done).catch(done)
+    })
+
+    it('options.exclude: [biz/login/error-msg]', function(done) {
+        asb('biz/login/index.js', genOptions({
+            all: true,
+            exclude: ["$", "angular", "biz/login/error-msg", "bootstrap"]
+        })).then(function (module) {
+        	fileEqual('options.exclude.array.js', 'biz/login/index.js')
+        }).then(done).catch(done)
+
+    })
+
+    xit('options.exclude: function return null', function(done) {
+        asb('biz/login/index.js', genOptions({
             all: true,
             exclude: function(id) {
                 if (id === 'biz/login/error-msg') {
                     return null
                 }
             }
-        }))
+        })).then(function (module) {
+        	fileEqual('options.exclude.function.return.null.js', 'biz/login/index.js')
+        }).then(done).catch(done)
 
-        fileEqual('options.exclude.function.return.null.js', 'biz/login/index.js')
     })
 
-    it('options.minify: true', function() {
-        asb('biz/login/index.js', H.extend({}, baseOptions, {
+    xit('options.minify: true', function(done) {
+        asb('biz/login/index.js', genOptions({
             minify: true,
             all: true
-        }))
+        })).then(function (module) {
+        	fileEqual('options.minify.true.js', 'biz/login/index.js')
+        }).then(done).catch(done)
 
-        fileEqual('options.minify.true.js', 'biz/login/index.js')
     })
 
-    it('options.parsers: css', function() {
-        asb('biz/login/index.js', H.extend({}, baseOptions, {
+    xit('options.parsers: css', function(done) {
+        asb('biz/login/index.js', genOptions({
             parsers: {
                 '.css': function(meta) {
                     var cssTemplate = 'define("%s", [], function() { seajs.importStyle(%s); });'
@@ -130,52 +152,58 @@ describe('asb', function() {
                     return source
                 }
             }
-        }))
+        })).then(function (module) {
+        	fileEqual('options.parsers.css.js', 'biz/login/index.js')
+        }).then(done).catch(done)
 
-        fileEqual('options.parsers.css.js', 'biz/login/index.js')
     })
 
-    it('options.copyOther: true', function() {
-        asb('biz/login/**', H.extend({}, baseOptions, {
+    xit('options.copyOther: true', function(done) {
+        asb('biz/login/**', genOptions({
             copyOther: true
-        }))
+        })).then(function (module) {
+        	fileEqual('options.copyOther.true.js', 'biz/login/error-msg.js')
+        }).then(done).catch(done)
 
-        fileEqual('options.copyOther.true.js', 'biz/login/error-msg.js')
     })
 
-    it('options.footer: "footer"', function() {
-        asb('biz/login/index.js', H.extend({}, baseOptions, {
+    xit('options.footer: "footer"', function(done) {
+        asb('biz/login/index.js', genOptions({
             footer: "\n// footer \n"
-        }))
+        })).then(function (module) {
+        	fileEqual('options.footer.js', 'biz/login/index.js')
+        }).then(done).catch(done)
 
-        fileEqual('options.footer.js', 'biz/login/index.js')
     })
 
-    it('options.uglify: true', function() {
-        asb('biz/login/index.js', H.extend({}, baseOptions, {
+    xit('options.uglify: true', function(done) {
+        asb('biz/login/index.js', genOptions({
             minify: true,
             uglify: {
                 beautify: true
             }
-        }))
+        })).then(function (module) {
+        	fileEqual('options.uglify.js', 'biz/login/index.js')
+        }).then(done).catch(done)
 
-        fileEqual('options.uglify.js', 'biz/login/index.js')
     })
 
-    it('options.onPost: function', function() {
-        asb('biz/login/index.js', H.extend({}, baseOptions, {
+    xit('options.onPost: function', function(done) {
+        asb('biz/login/index.js', genOptions({
             onPost: function(filepath, file) {
                 filepath.should.be.equal(path.join('test/dist/biz/login/index.js'))
-                file.toString().should.startWith('define("biz/login/index"')
+                file.toString().should.startWxith('define("biz/login/index"')
             }
-        }))
+        })).then(function (module) {
+        }).then(done).catch(done)
     })
 
-    it('options.log: function', function() {
-        asb('biz/login/index.js', H.extend({}, baseOptions, {
+    xit('options.log: function', function(done) {
+        asb('biz/login/index.js', genOptions({
             log: function(text) {
                 should.exist(text)
             }
-        }))
+        })).then(function (module) {
+        }).then(done).catch(done)
     })
 })
