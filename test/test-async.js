@@ -3,7 +3,7 @@
 
 // var options = {
 //     base: './test/fixtures',
-//     cwd: './test/fixtures/',
+//     cwd: './test/fixtures',
 //     minify: true,
 //     all: true,
 //     uglify: {
@@ -11,7 +11,7 @@
 //             drop_console: true
 //         }
 //     },
-//     exclude: ['T'],
+//     exclude: [],
 //     alias: {
 //         'T': 'amrio/tools/index'
 //     }

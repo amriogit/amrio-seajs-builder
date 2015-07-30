@@ -1,2 +1,0 @@
-define("mod/main",["mod/c","T","mod/d"],function(d,a,n){o["catch"](lala);var e=new Array(1,2,3);alert(e),d("./a"),d("mod/c"),d("T"),n.exports="main \u5367\u69fd"});
-define("mod/a",["mod/d"],function(d,o,e){d("./d"),e.exports="a"});

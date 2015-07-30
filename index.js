@@ -14,6 +14,22 @@ var parsers = require('./lib/async/parsers')
 
 var H = require('./lib/helper')
 
+function writeFile(dest, result, resolve, reject) {
+    mkdirp(path.dirname(dest), function(err) {
+        if (err) {
+            reject(err)
+        } else {
+            fs.writeFile(dest, result, function(err) {
+                if (err) {
+                    reject(err)
+                } else {
+                    resolve()
+                }
+            })
+        }
+    })
+}
+
 function Builder(src, options) {
 
     this.options = H.extend({
@@ -23,7 +39,8 @@ function Builder(src, options) {
         copyOther: true,
         log: function(info) {
             console.log(info.stack ? info.stack : info)
-        }
+        },
+        onPost: writeFile
     }, options)
 
     this.src = src
@@ -88,7 +105,7 @@ H.extend(Builder.prototype, {
                         if (err) {
                             reject(err)
                         } else {
-                            self.output(dest, file).then(resolve, reject)
+                            writeFile(dest, file, resolve, reject)
                         }
                     })
                 })
@@ -106,22 +123,13 @@ H.extend(Builder.prototype, {
 
     },
     output: function(dest, result) {
+        var self = this
         return new Promise(function(resolve, reject) {
-            
-            mkdirp(path.dirname(dest), function(err) {
-                if (err) {
-                    reject(err)
-                } else {
-                    fs.writeFile(dest, result, function(err) {
-                        if (err) {
-                            reject(err)
-                        } else {
-                            resolve()
-                        }
-                    })
-                }
-            })
-
+            if (self.options.onPost) {
+                self.options.onPost(dest, result, resolve, reject)
+            } else {
+                resolve()
+            }
         })
     }
 })
