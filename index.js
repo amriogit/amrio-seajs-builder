@@ -38,7 +38,7 @@ function Builder(src, options) {
         encoding: 'utf-8',
         copyOther: true,
         log: function(info) {
-            console.log(info.stack ? info.stack : info)
+            // console.log(info.stack ? info.stack : info)
         },
         onPost: writeFile
     }, options)
@@ -57,6 +57,7 @@ H.extend(Builder.prototype, {
         this.manager = new ModuleManager(this.options)
 
         this.manager.on('error', function(err) {
+            console.log(err.stack)
             H.log(self.options.log, err)
         })
 
@@ -90,6 +91,7 @@ H.extend(Builder.prototype, {
 
             if (ext === parsers.defaultExtname) {
                 var meta = {
+                    id: cmdTools.uri2id(filepath),
                     uri: uri
                 }
 

@@ -106,6 +106,20 @@ describe('asb', function() {
         }).then(done).catch(done)
     })
 
+    it('options.vars: { id: "b" }', function(done) {
+
+        var a = asb('mod/a.js', genOptions({
+            exclude: ["angular", "bootstrap"],
+            vars: {
+                'id': 'b'
+            },
+            all: true
+        })).then(function(module) {
+            fileEqual('options.vars.js', 'mod/a.js')
+
+        }).then(done).catch(done)
+    })
+
     it('options.exclude: [biz/login/error-msg]', function(done) {
         asb('biz/login/index.js', genOptions({
             all: true,

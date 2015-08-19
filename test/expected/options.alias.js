@@ -1,6 +1,6 @@
 define("amrio/tips/index", [ "bootstrap" ], function(require, exports, module) {
     "use strict";
-    var $ = require("$");
+    var $ = require("biz/login/other");
     var bootstrap = require("bootstrap");
     require("./style.css");
     require("./helper");
