@@ -28,7 +28,7 @@ function genOptions(options) {
         minify: false,
         exclude: ["$", "angular", "bootstrap"],
         all: false,
-        log: false
+        log: true
     }, options)
 }
 
@@ -215,9 +215,9 @@ describe('asb', function() {
 
     it('options.onPost: function', function(done) {
         asb('biz/login/index.js', genOptions({
-            onPost: function(dest, file, resolve, reject) {
+            onPost: function(dest, module, resolve, reject) {
                 dest.should.be.equal('test/dist/biz/login/index.js')
-                file.toString().should.startWith('define("biz/login/index"')
+                module.result.toString().should.startWith('define("biz/login/index"')
                 resolve()
             }
         })).then(done).catch(done)
@@ -228,6 +228,6 @@ describe('asb', function() {
             log: function(text) {
                 should.exist(text)
             }
-        })).then(function(module) {}).then(done).catch(done)
+        })).then(done).catch(done)
     })
 })

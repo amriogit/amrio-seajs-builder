@@ -7,19 +7,19 @@ var glob = require('glob')
 var mkdirp = require('mkdirp')
 var chalk = require('chalk')
 
-var ModuleManager = require('./lib/async/module-manager')
-var Module = require('./lib/async/module')
-var cmdTools = require('./lib/async/cmd-tools')
-var parsers = require('./lib/async/parsers')
+var ModuleManager = require('./lib/module-manager')
+var Module = require('./lib/module')
+var cmdTools = require('./lib/cmd-tools')
+var parsers = require('./lib/parsers')
 
 var H = require('./lib/helper')
 
-function writeFile(dest, result, resolve, reject) {
+function writeFile(dest, module, resolve, reject) {
     mkdirp(path.dirname(dest), function(err) {
         if (err) {
             reject(err)
         } else {
-            fs.writeFile(dest, result, function(err) {
+            fs.writeFile(dest, module.result, function(err) {
                 if (err) {
                     reject(err)
                 } else {
@@ -38,7 +38,7 @@ function Builder(src, options) {
         encoding: 'utf-8',
         copyOther: true,
         log: function(info) {
-            // console.log(info.stack ? info.stack : info)
+            console.log(info.stack ? info.stack : info)
         },
         onPost: writeFile
     }, options)
@@ -57,7 +57,6 @@ H.extend(Builder.prototype, {
         this.manager = new ModuleManager(this.options)
 
         this.manager.on('error', function(err) {
-            console.log(err.stack)
             H.log(self.options.log, err)
         })
 
@@ -81,22 +80,23 @@ H.extend(Builder.prototype, {
 
         var startTime = +new Date()
 
-        var rExtname = new RegExp('\\' + parsers.defaultExtname + '$')
-
         var promises = filePaths.map(function(filepath) {
 
-            var dest = cmdTools.normalize(path.join(options.dest, filepath))
-            var uri = cmdTools.normalize(path.resolve(self.options.cwd, filepath))
+            var dest = cmdTools.join(options.dest, filepath)
+            
+            var id = cmdTools.clearId(filepath)
+            var uri = cmdTools.join(self.options.cwd, filepath)
+
             var ext = path.extname(filepath)
 
             if (ext === parsers.defaultExtname) {
                 var meta = {
-                    id: cmdTools.uri2id(filepath),
+                    id: id,
                     uri: uri
                 }
 
                 return self.manager.get(meta).then(function(module) {
-                    return self.output(dest, module.result)
+                    return self.output(dest, module)
                 })
 
             }
@@ -116,7 +116,7 @@ H.extend(Builder.prototype, {
 
         return Promise.all(promises).then(function() {
 
-            var count = Object.keys(self.manager.cache).length
+            var count = self.manager.count
             var spendTime = (+new Date() - startTime) + 'ms'
             var message = util.format('asb spend %s build %s files\n', chalk.cyan(spendTime), chalk.cyan(count))
 
@@ -124,11 +124,11 @@ H.extend(Builder.prototype, {
         })
 
     },
-    output: function(dest, result) {
+    output: function(dest, module) {
         var self = this
         return new Promise(function(resolve, reject) {
             if (self.options.onPost) {
-                self.options.onPost(dest, result, resolve, reject)
+                self.options.onPost(dest, module, resolve, reject)
             } else {
                 resolve()
             }
