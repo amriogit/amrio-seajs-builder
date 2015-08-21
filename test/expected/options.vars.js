@@ -1,6 +1,6 @@
-define("mod/a", [], function(require, exports, module) {
+define("mod/vars", [], function(require, exports, module) {
     require("./b");
-    module.exports = "a";
+    module.exports = "vars";
 });
 define("mod/b", [], function(require, exports, module) {
     module.exports = "b";

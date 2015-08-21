@@ -108,14 +108,14 @@ describe('asb', function() {
 
     it('options.vars: { id: "b" }', function(done) {
 
-        var a = asb('mod/a.js', genOptions({
+        var a = asb('mod/vars.js', genOptions({
             exclude: ["angular", "bootstrap"],
             vars: {
                 'id': 'b'
             },
             all: true
         })).then(function(module) {
-            fileEqual('options.vars.js', 'mod/a.js')
+            fileEqual('options.vars.js', 'mod/vars.js')
 
         }).then(done).catch(done)
     })
@@ -229,5 +229,18 @@ describe('asb', function() {
                 should.exist(text)
             }
         })).then(done).catch(done)
+    })
+
+    it('transformRequire', function(done) {
+        asb('mod/require.js', genOptions({
+            alias: {
+                a: './a'
+            },
+            vars: {
+                lang: 'b'
+            }
+        })).then(function (module) {
+            fileEqual('transform-require.js', 'mod/require.js')
+        }).then(done).catch(done)
     })
 })

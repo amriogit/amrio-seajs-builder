@@ -1,27 +1,25 @@
 define(function(require, exports, module) {
-    
-    require('a', function(){})
-
-    require('')
     require()
     require(a)
-
-    require('b')
-
-    require('./b')
-
+    require('')
+    require(null)
+    require('a ', function(){})
+    require('   a      ')
+    require('   a ')
+    require('./a')
     require(['a'])
+    require(['./{lang}'])
+    require('./{lang}')
 
     require.async()
-    require.async([a])
-    
-    require.async('a', function(){})
-
-    require.async('c')
-
-    require.async(['a', 'b'], function(){})
-
+    require.async(null)
+    require.async([null, 'a'])
+    require.async([])
+    require.async([b])
+    require.async('b', function(){})
+    require.async('   c    ')
+    require.async(['      a', 'b'], function(){})
     require.async(['a', 'b', 'c'])
-
     require.async(['c'])
+    require.async(['a', './{lang}'])
 })
