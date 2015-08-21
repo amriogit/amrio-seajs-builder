@@ -28,7 +28,7 @@ function genOptions(options) {
         minify: false,
         exclude: ["$", "angular", "bootstrap"],
         all: false,
-        log: true
+        log: false
     }, options)
 }
 
@@ -223,15 +223,7 @@ describe('asb', function() {
         })).then(done).catch(done)
     })
 
-    it('options.log: function', function(done) {
-        asb('biz/login/index.js', genOptions({
-            log: function(text) {
-                should.exist(text)
-            }
-        })).then(done).catch(done)
-    })
-
-    it('transformRequire', function(done) {
+    it('transform-require', function(done) {
         asb('mod/require.js', genOptions({
             alias: {
                 a: './a'

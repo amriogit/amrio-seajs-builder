@@ -3,6 +3,7 @@
 var fs = require('fs')
 var path = require('path')
 var util = require('util')
+
 var glob = require('glob')
 var mkdirp = require('mkdirp')
 var chalk = require('chalk')
@@ -37,27 +38,30 @@ function Builder(src, options) {
         dest: './dist',
         encoding: 'utf-8',
         copyOther: true,
-        log: function(info) {
-            console.log(info.stack ? info.stack : info)
-        },
-        onPost: writeFile
+        onPost: writeFile,
+        log: false
     }, options)
 
     this.src = src
-
-    H.log(this.options.log, util.format('asb begin %s', chalk.cyan(this.src)))
 
     return this.init()
 }
 
 H.extend(Builder.prototype, {
     init: function() {
+
+        this.options.log && console.info(util.format('ASB Starting %s', chalk.cyan(this.src)))
+
         var self = this
 
         this.manager = new ModuleManager(this.options)
 
         this.manager.on('error', function(err) {
-            H.log(self.options.log, err)
+            self.options.log && console.error(err.stack)
+        })
+
+        this.manager.on('warn', function(msg) {
+            self.options.log && console.warn(msg)
         })
 
         var pattern = this.src
@@ -117,10 +121,12 @@ H.extend(Builder.prototype, {
         return Promise.all(promises).then(function() {
 
             var count = self.manager.count
+            
             var spendTime = (+new Date() - startTime) + 'ms'
-            var message = util.format('asb spend %s build %s files\n', chalk.cyan(spendTime), chalk.cyan(count))
 
-            H.log(self.options.log, message)
+            var message = util.format('ASB Spend %s Builded %s Modules\n', chalk.cyan(spendTime), chalk.cyan(count))
+
+            self.options.log && console.info(message)
         })
 
     },
