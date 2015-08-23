@@ -4,251 +4,331 @@
 
 amrio-seajs-builder 一个 **CMD** 模块构建工具。   
 
->此项目的目的是为了把 `transport` 与 `concat` 任务融合在一起，没有 `transport`文件产生。免去过多概念，降低 `CMD` 构建难度。
+>降低 `CMD` 构建难度，与 `seajs.config` 保持一致配置，会配置 `seajs` 就会构建。
 
->运行原理与 [grunt-cmd-transport](https://www.npmjs.org/package/grunt-cmd-transport)、 [grunt-cmd-concat](https://www.npmjs.org/package/grunt-cmd-concat) 保持一致，并在这之上加了一些特性。
-   
 ## 特性：  
 
-* `transport` 和 `concat` 过程没有分离，采用递归查找出所有依赖，合并所有能合并的文件，非 `CMD` 模块文件也不放过。
+* `seajs` 能处理的模块，`amrio-seajs-builder` 也可以
 
-* `transport` 产生的文件直接缓存在内存中，避免 `transport` 文件写入硬盘，可以提升些性能？（177 个文件，能减少 1~2 秒，视机器性能而定）   
+* `transport` `concat` 不分离，递归查找所有依赖，合并所有能合并的文件，非模块文件也可以合并
 
-* `transport` 与 `concat` 融合之后，之前可能出现的重复 concat 问题迎刃而解！因为依赖列表都是直接从 transport 的缓存信息里获取，concat 时不需要重新分析依赖，大大提升了合并文件的正确性，并且为下面的特性提供了强劲支持。
+* `transport` `concat` 紧密结合，依赖合并不容易出错，并且可以容易的定制合并排除策略
 
-* 已经合并在一起的依赖不会再出现在入口模块的依赖数组里面了，入口模块的依赖数组里只会出现没有合并进来的依赖。
-这样可以让文件看起来清爽些，有些模块依赖几十个，`transport` 后又会把这几十个依赖放入依赖数组里，如果这些模块已经被合并，其实是没有必要重复出现在依赖数组里的了。已经定义的模块可以直接 `require`
+* 移除依赖列表中已经合并的依赖，避免依赖列表过长导致文件体积增大
 
-* 多功能的 `exclude` 配置项，随心所欲的控制依赖列表，这一切都是为了让产出文件变得清爽。
+* 内置了 `Uglify-js` 压缩器，配合 `connector` 可以一个模块可以一行，使之较为容易地观察压缩后的代码
 
-* 内置了 `uglify` 压缩器，让模块压缩时不会一团揉在一起，这一切也都是为了让产出的文件变得更清爽。
+# 注意
 
-目前只支持匿名模块的构建，如果已经是具名模块，则当做普通 js 文件对待。
-普通非模块 js 文件也会被压缩处理，如果开启了压缩。并且也会被合并进依赖它的模块里。
+只支持未 `transport` 过的模块的构建，普通非模块文件也可以合并。
+
 ``` js
-// 匿名模块会进行 transport concat 构建
+// 未 `transport` 的模块会进行 `transport concat` 构建
 define(function(require, exports, module){
     // code...
 })
 
-// 具名模块不会进行 transport concat 构建，只会当做普通 js 文件处理
-define("biz/login/index", ["amrio/tips/style.css", "amrio/tips/index"], function(require, exports, module){
+// 未 `transport` 的模块会进行 `transport concat` 构建
+define(['amrio/tips/style.css', 'amrio/tips/index'], function(require, exports, module){
     // code...
 })
 
-// 普通 js 模块也会被压缩处理，如果开启了压缩。并且也会被合并进依赖它的模块里，
-// 使用了缓存策略，保证不会重复合并模块，这也是为什么让 transport 与 concat 融合在一起的最大原因
-new function() {
+// 未 `transport` 的模块会进行 `transport concat` 构建
+define('id', function(require, exports, module){
     // code...
-}
+})
+
+// 已经 `transport` 的模块不做处理，只会被当作依赖合并
+define('biz/login/index', ['amrio/tips/style.css', 'amrio/tips/index'], function(require, exports, module){
+    // code...
+})
+
+// 非模块不做处理，只会被当作依赖合并
+(function() {
+    // code...
+})()
 ```
 
-PS: 非常感谢 [__seajs__](http://seajs.org) 和它配套的自定义构建工具 [grunt-cmd-transport](https://www.npmjs.org/package/grunt-cmd-transport)、 [grunt-cmd-concat](https://www.npmjs.org/package/grunt-cmd-concat)
+# 安装 amrio-seajs-builder
 
-## 安装 amrio-seajs-builder
-此模块需要全局安装，以便使用全局命令 `asb`
+如需使用全局命令 `asb`，请全局安装
+
 ```
 npm i amrio-seajs-builder -g
 ```
 
-##  命令行使用
+#  命令行使用
 使用 npm 全局安装完毕后，可以在命令行中使用：`asb -h` 查看该命令的帮助信息，
 如果报错，请重新全局安装，直到命令行中 asb 命令可用
 
-### 参数
-`-s, --src <path> `构建路径，必填项！  
-`-d, --dest <path> `部署路径 默认值：`./sea-modules`  
-`-p, --paths <path>` 模块的基础查找路径 默认值：`[./, ./sea-modules]`  
-`--all` 合并模块范围，指定后相对模块和绝对模块都会被合并，默认只合并相对模块   
-`--no-minify` 关闭 `uglifyjs` 压缩  
+## 参数
+``` bash
+Options:
 
-### 用法
-```
-asb -s amrio
-```  
-`-s` 参数是指定构建源文件/文件夹的路径，这条命令会尝试找到当前执行 `asb` 命令目录下的 `amrio` 文件夹，并且把里面 `*.js` 模块文件进行构建。最后构建至默认部署路径 `sea-modules` 文件夹里面，构建完毕后会在 `sea-modules` 目录下生成 `amrio/**/*.js` 等文件
+    -h, --help             output usage information
+    -V, --version          output the version number
+    -s, --src <path>       src path required
+    -d, --dest <path>      dest path. defaults ./dist
+    -c, --cwd <path>       same seajs.config.cwd. defaults ./
+    -b, --base <path>      same seajs.config.base. defaults ./
+    -a, --alias <object>   same seajs.config.alias
+    -p, --paths <object>   same seajs.config.paths
+    -v, --vars <object>    same seajs.config.vars
+    -e, --exclude <array>  exclude module
+    --config <path>        specify a config file. defaults ./asb.config.js
+    --all                  concat relative and top
+    --no-log               disable log
+    --no-minify            disable minify
+    --no-copy-other        copy other files, like *.{css,png,...}
+``` 
 
-#### 指定构建文件/文件夹，多个需要用 “,” 分开
-```
-asb -s amrio,biz/mix/validation.js
-```
+## 用法
 
-#### 使用 all 构建范围构建到指定目录
-使用 `--all` 意味着不光相对模块，顶级模块也会被合并进来
 ```
-asb -s amrio --all
-```
+// -s 参数指定了需要构建的文件路径，支持 glob 格式输入，多个使用逗号分隔
 
-#### 使用 -p 指定构建时文件合并的基础查找路径，多个 paths 使用 “,” 分开查找模块路径的时候都会使用这些 `paths` 作为 base 路径进行查找
-```
-asb -s amrio -p ../../myLib,my-module,../sea-modules
-```
-
-#### 使用 -d 参数指定构建后产出的文件目录
-```
-asb -s amrio -d dist
+asb -s amrio/**/*.js
+asb -s amrio/**/*.js,biz/**/*.js
 ```
 
-#### 使用 --no-minify 参数指定构建文件不压缩
 ```
-asb -s amrio --no-minify
+// 使用 -d 参数指定构建后产出的文件目录
+
+asb -s amrio/**/*.js -d dist
 ```
 
-# nodejs API
+```
+// 使用 -p 指定构建的 paths 选项
+// 和 seajs.config.paths 的作用一致，多个使用逗号分开
+
+asb -s amrio/**/*.js -p biz:./biz,amrio:./amrio
+```
+
+```
+// 使用 -a 指定构建的 alias 选项
+// 和 seajs.config.alias 的作用一致，多个使用逗号分开
+
+asb -s amrio/**/*.js -a $:jquery/1.7.2/jqeury,angular:angular/1.1.5/angular
+```
+
+```
+// 使用 --all 意味着相对模块、顶级模块都会被合并
+
+asb -s amrio/**/*.js --all
+```
+
+```
+// 使用 --config 来配置命令行，默认会查找当前目录下的 `./asb.config.js` 文件，
+// 文件里定义的参数可以被命令行参数覆盖
+// 具体可配置参数请参考下面的 Node API
+
+asb -s amrio/**/*.js --config ./config/asb.config.js
+```
+
+# Node API
 
 ## 安装
 ```
 npm i amrio-seajs-builder --save
 ```
 
-## 用法
+## 例子
+
 ```js
 var asb = require('amrio-seajs-builder')
 
-asb('amrio', {
-    base: 'js',
-    dest: 'sea-modules',
-    paths: ['../my-modules', 'sea-modules', 'lib'],
+asb('amrio/tips/index.js', {
+    dest: './dist',
+    cwd: './',
+    base: './sea-modules',
+    alias: {
+        $: 'jquery/1.7.2/jquery'
+    },
+    paths: {
+        biz: './biz',
+        amrio: './amrio'
+    },
+    vars: {
+        lang: 'cn'
+    },
     all: true,
+    log: true,
     minify: true,
-    exclude: ['$', 'angular'],
-    parsers: {
-    	'.less': lessHandler
-    }
+    exclude: ["$", "angular", "bootstrap"]
+
+}).then(function(module) {
+    console.log(module)
+    console.log(module.result)
 })
 ```
 
-## API
+## asb(src, options)
 
-### asb(src, options)
-Type: `function(src, options)`  
+模块构建主方法
 
-构建模块的主方法
+* `src` {String || Array[String]} 需要构建的文件路径，可以输入一个 glob 格式的字符串或字符串数组
+* `options` {Object} 构建参数，见下文
+* `return` {Promise} 回调一个 module 对象，module.result 属性为构建的结果
 
-#### src
-Type: `string`  
+## options
 
-需要构建的模块文件夹或具体路径。目前只支持 .js 文件的构建
+### cwd
+Type: `String`  
+Default: `./`
 
-#### options
+和 seajs.config.cwd 的作用一样，用于解析相对路径，seajs.use('./main') 时就是使用 `cwd` 去 resolve。
+可以和 `paths` 配合一起使用，例如：
 
-##### base
-Type: `string`  
-Default: `process.cwd()`
+``` js
+asb(src, {
+    cwd: './js',
+    base: './js/sea-modules',
+    paths: {
+        biz: './biz'
+    }
+})
 
-base 路径，这个配置的作用一般是拿来处理模块 id 用的，例如输入的 src 是 js/amrio 那么构建出来的模块 id 就是会像
-`define('js/amrio/validation/rules', [...], factory)` 这样。如果不想带 js 前缀，那么就把 `base` 配成 js，这样
-src 就只用填 amrio 就可以了。
+// 配置了 biz paths 时 resolve 的 uri 是个相对路径，所以基于 cwd 解析
+resolve('biz/mod') === './js/biz/mod.js'
 
-##### dest
-Type: `string`  
-Default: `sea-module`
+// 没有配置 paths 的 amrio resolve 的 uri 是顶级路径，所以基于 base 解析
+resolve('amrio/mod') === './js/sea-modules/amrio/mod.js'
+```
+
+### base
+Type: `String` 
+Default: `./`
+
+和 seajs.config.base 的作用一样，是顶级模块的基础查找路径
+
+### alias
+Type: `Object`  
+Default: `{}`
+
+和 seajs.config.alias 的作用一样，作为 id 的别名，构建出的模块也是使用 alias 解析值作为模块 id
+
+### paths
+Type: `Object`  
+Default: `{}`
+
+和 seajs.config.paths 的作用一样，用作配置一个模块的路径
+
+### vars
+Type: `Object`  
+Default: `{}`
+
+和 seajs.config.vars 的作用一样，可以在 id 中插变量，例如：
+``` js
+asb(src, {
+    vars: {
+        lang: 'en'
+    }
+})
+
+resolve('amrio/lang/{lang}') === 'amrio/lang/en'
+```
+
+### map
+Type: `[]`  
+Default: `[]`
+
+和 seajs.config.map 的作用一样，可以改变模块的查找路径：
+
+### dest
+Type: `String`  
+Default: `./dist`
 
 构建产的出路径
 
-##### paths
-Type: `array`  
-Default: `[process.cwd()]`
-
-模块查找的基础路径
-
-##### all
-Type: `boolean`  
+### all
+Type: `Boolean`  
 Default: `false`
 
 是否合并绝对模块，默认只合并相对模块
 
-##### minify
-Type: `boolean`  
-Default: `true`
-
 构建时是否压缩模块，默认开启
 
-##### exclude
-Type: `array || function(id, meta)`  
+### exclude
+Type: `Array || Function(id)`  
 Default: `[]`
 
-需要排除的模块，如果定义了 exclude 为数组，那么包含在数组里面的模块 id 就不会被处理了。
-如果是 functuon 那么会有点不一样
+需要排除的模块
 
-##### function(id, meta)
-Return Type: `boolean || null`  
+为 {Array} 时，会检查包含在数组里面的 id，如果存在则不会进行合并操作
 
-如果方法返回的是布尔值，那么返回 true 就会不处理这个模块 id 了，反之亦然。
+为 {Function} 时，每个模块的依赖 id 会作为参数传进来，可以返回 `true` 或 `null`
 
-如果返回了 `null` 那么该 id 都不会出现在入口模块的依赖数组里了，
-此设计是为了减少早已注册的模块 id 出现在其它模块的依赖数组里面。
+* 返回 `true` 则排除模块
+* 返回 `null` 除了排除模块外，也从依赖列表里删除该 `id`
+    * 这对排除一些公共模块很有用，例如每个模块都依赖了 `$`，但它早已加载，这时就可以把它从依赖列表里删除掉，直接 require 就好，这样依赖列表会少些，减少文件体积，减少无用 resolve
 
-例如：jquery 模块在加载的时候是最先定义的模块 id，那么后面的模块可以确保直接 require，那么 jquery 就可以不用出现在它们依赖数组里。
+### connector
+Type: `String`  
+Default: `\n`
 
-###### id
-Type: `string`  
+concat 连接模块的 connector`[code...].join(connector)`），让合并出来的文件有条理。
 
-id 是当前模块要要找的依赖，可以通过判断 id 来动态的排除某些模块是否要被处理
-
-###### meta
-Type: `object`  
-
-meta 是当前模块的元数据，包含了 `meta.id meta.uri meta.deps, meta.factory`。
-可以利用它来进行一些辅助判断。
-
-##### parsers
-Type: `object`  
-Default: `{'.js', function(meta), '.css', function(meta), '.tpl', function(meta)}`
-
-模块解析器对象，此对象中包含的 `key` 是模块的后缀名，解析器是通过后缀名来处理模块。
-
-这些 `parser(meta)` 接收一个参数 `meta`，包含了 `meta.id meta.uri`。此方法的返回值就是模块的 `factory`，后续的 `transport concat` 都基于它
-
-用法
-``` js
-parsers: {
-    '.css': function(meta) {
-    	var cssTemplate = 'define("%s", [], function() { seajs.importStyle(%s); });'
-        var source = null
-        if (fs.existsSync(meta.uri)) {
-            var source = fs.readFileSync(meta.uri).toString()
-            source = new CleanCSS().minify(source).styles
-            source = util.format(cssTemplate, meta.id, JSON.stringify(source))
-        }
-        return source
-    }
-}
-```
-
-##### copyOther
-Type: `boolean`  
+### copyOther
+Type: `Boolean`  
 Default: `true`
 
 是否复制其它非模块文件到构建目录中，默认开启。
 此设计是为了确保模块的完整性，例如有些模块用到了一些图片、字体等。那么开启这个选项，就会同步复制这些文件，确保模块的完整性。
 
-##### footer
-Type: `string`  
-Default: `\n`
+### minify
+Type: `Boolean`  
+Default: `true`
 
-concat 连接模块的 footer（`[factory...].join(footer)`），让合并出来的文件更有条理。
+### uglify
+Type: `Object`  
+Default: 
+``` js
+uglify: {
+    compress: {
+        warnings: false
+    },
+    beautify: {
+        ascii_only: true
+    }
+}
+```
 
-##### uglify
-Type: `object`  
-Default: `{ ascii_only: true }`
-
-`uglify.print_to_string` 时的选项，默认值是把中文等转成 `ascii` 字符，增加 `gzip` 的压缩率，避免中文乱码。
 仅在 `minify: true` 时有效
 
-##### onPost
-Type: `function(file, destPath)`  
+使用 `ascii_only`，增加 `gzip` 的压缩率，避免中文乱码，还可以使用 ` Uglify-js` 的可用配置，例如 drop_console 选项
+
+### onPost
+Type: `Function(module, dest, resolve, reject)`  
 Default: `writeFile`
 
-产出文件的发布函数，默认值是按照 `destPath` 路径写入 `file`
+产出文件的发布函数，默认值是按照 `dest` 路径保存 `module.result` 到文件。处理完毕后请调用 `resolve`，出错则调用 `reject`
 
-##### log
-Type: `boolean || function(text)`  
+### log
+Type: `Boolean`  
 Default: `false`
 
 打印日志开关，如果配置的是一个方法，那么将执行它，参数 `text` 就是需要打印的日志。
 
-## 联系
+## asb.parsers.add(ext, parser)
+
+添加一个模块解析器
+
+用法
+``` js
+asb.parsers.add('.css', function(meta, resolve, reject) {
+    asb.parsers.readFile(meta.uri).then(function(file) {
+        file = new CleanCSS().minify(file).styles
+        file = util.format(cssTemplate, meta.id, JSON.stringify(file))
+        resolve(file)
+    }).catch(reject)
+})
+```
+
+# 致谢
+非常感谢 [__seajs__](http://seajs.org) 和它配套的自定义构建工具 [grunt-cmd-transport](https://www.npmjs.org/package/grunt-cmd-transport)、 [grunt-cmd-concat](https://www.npmjs.org/package/grunt-cmd-concat)
+
+
+# 联系
 * EMAIL [amriogm@gmail.com](mailto:amriogm@gmail.com)  
 * github [https://github.com/amriogit/amrio-seajs-builder](https://github.com/amriogit/amrio-seajs-builder)
 

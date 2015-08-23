@@ -1,23 +1,16 @@
 #!/usr/bin/env node
-
-var path = require('path')
 var fs = require('fs')
-var util = require('util')
-var chalk = require('chalk')
 
+var _ = require('lodash')
+var program = require('commander')
+var pkg = require('./package.json')
 var asb = require('./')
-var H = require('./lib/helper')
 
-function resolve(uri) {
-    return chalk.cyan(H.normalize(uri))
-}
-
-function objectOptions(values) {
+function objectCoercion(values) {
     var result = {}
 
     if (values) {
         values = values.split(',')
-
         if (values.length) {
             values.forEach(function (value) {
                 value = value.trim().split(':')
@@ -29,49 +22,52 @@ function objectOptions(values) {
     return result
 }
 
-function getOptions() {
-    var program = require('commander')
-    var pkg = require('./package.json')
+function arrayCoercion(values) {
+    var result = []
 
-    program.version(pkg.version)
-        .option('-s, --src <value>', 'Src path required')
-        .option('-d, --dest <value>', 'Dest path [dist]', 'dist')
-
-        .option('--base <value>', 'Same seajs.config.base', '.')
-        .option('--cwd <value>', 'Same seajs.config.cwd', '.')
-
-        .option('--alias <value>', 'Same seajs.config.alias', objectOptions)
-        .option('--paths <value>', 'Same seajs.config.paths', objectOptions)
-        .option('--vars <value>', 'Same seajs.config.vars', objectOptions)
-
-        .option('--all', 'Concat relative and top module')
-        .option('--no-minify', 'Disabled minify module')
-        .parse(process.argv)
-
-    if (!program.src) {
-        throw new Error('invalid --src args')
+    if (values) {
+        values = values.split(',')
+        if (values.length) {
+            values.forEach(function (value) {
+                value = value.trim()
+                result.push(value)
+            })
+        }
     }
-    return program
+
+    return result
 }
 
-new function() {
-    var options = getOptions()
 
-    console.log(options.alias)
-    // options.paths || (options.paths = ['./', 'sea-modules'])
-    // options.all || (options.all = false)
-    // console.log('build options:')
-    // console.log('src: %s', resolve(options.src))
-    // console.log('dest: %s', resolve(options.dest))
-    // console.log('paths: %s', resolve('[' + options.paths.join(', ') + ']'))
-    // console.log('all: %s', chalk.cyan(options.all))
-    // console.log('minify: %s\n', chalk.cyan(options.minify))
+program.version(pkg.version)
+    .usage('-s "amrio/**/*" -a $:jquery,_:underscore -p biz:./biz')
 
-    // asb(options.src, {
-    //     dest: options.dest,
-    //     paths: options.paths,
-    //     all: options.all,
-    //     minify: options.minify,
-    //     log: true
-    // })
+    .option('-s, --src <path>', 'src path required', arrayCoercion)
+    .option('-d, --dest <path>', 'dest path. defaults ./dist', 'dist')
+
+    .option('-c, --cwd <path>', 'same seajs.config.cwd. defaults ./', './')
+    .option('-b, --base <path>', 'same seajs.config.base. defaults ./', './')
+
+    .option('-a, --alias <object>', 'same seajs.config.alias', objectCoercion, {})
+    .option('-p, --paths <object>', 'same seajs.config.paths', objectCoercion, {})
+    .option('-v, --vars <object>', 'same seajs.config.vars', objectCoercion, {})
+    .option('-e, --exclude <array>', 'exclude module', arrayCoercion, [])
+    .option('--config <path>', 'specify a config file. defaults ./asb.config.js', './asb.config.js')
+
+    .option('--all', 'concat relative and top')
+    .option('--no-log', 'disable log')
+    .option('--no-minify', 'disable minify')
+    .option('--no-copy-other', 'copy other files, like *.{css,png,...}')
+    .parse(process.argv)
+
+var options = program.opts()
+
+if (options.config && fs.existsSync(options.config)) {
+    options = _.merge(require(options.config), options)
+}
+
+if (options.src) {
+    asb(options.src, options)
+} else {
+    program.help()
 }

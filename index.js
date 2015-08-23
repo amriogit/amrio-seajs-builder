@@ -7,33 +7,20 @@ var util = require('util')
 var glob = require('glob')
 var mkdirp = require('mkdirp')
 var chalk = require('chalk')
+var _ = require('lodash')
 
 var ModuleManager = require('./lib/module-manager')
 var Module = require('./lib/module')
 var cmdTools = require('./lib/cmd-tools')
 var parsers = require('./lib/parsers')
 
-var H = require('./lib/helper')
-
-function writeFile(dest, module, resolve, reject) {
-    mkdirp(path.dirname(dest), function(err) {
-        if (err) {
-            reject(err)
-        } else {
-            fs.writeFile(dest, module.result, function(err) {
-                if (err) {
-                    reject(err)
-                } else {
-                    resolve()
-                }
-            })
-        }
-    })
-}
-
 function Builder(src, options) {
 
-    this.options = H.extend({
+    if (!(this instanceof Builder)) {
+        return new Builder(src, options)
+    }
+
+    this.options = _.merge({
         cwd: './',
         dest: './dist',
         encoding: 'utf-8',
@@ -42,12 +29,20 @@ function Builder(src, options) {
         log: false
     }, options)
 
-    this.src = src
+    this.src = [].concat(src)
 
     return this.init()
 }
 
-H.extend(Builder.prototype, {
+// Inner modules
+_.assign(Builder, {
+    parsers: parsers,
+    ModuleManager: ModuleManager,
+    Module: Module,
+    cmdTools: cmdTools
+})
+
+_.assign(Builder.prototype, {
     init: function() {
 
         this.options.log && console.info(util.format('ASB Starting %s', chalk.cyan(this.src)))
@@ -57,24 +52,19 @@ H.extend(Builder.prototype, {
         this.manager = new ModuleManager(this.options)
 
         this.manager.on('error', function(err) {
-            self.options.log && console.error(err.stack)
+            self.options.log && console.error(err.stack || err)
         })
 
         this.manager.on('warn', function(msg) {
             self.options.log && console.warn(msg)
         })
 
-        var pattern = this.src
-        var ext = path.extname(pattern)
-
-        if (!ext && !glob.hasMagic(pattern)) {
-            pattern = path.join(pattern, '**')
-        }
-
-        var filePaths = glob.sync(pattern, {
-            cwd: this.options.cwd,
-            nodir: true
-        })
+        var filePaths = this.src.reduce(function(array, src) {
+            return array.concat(glob.sync(src, {
+                cwd: self.options.cwd,
+                nodir: true
+            }))
+        }, [])
 
         return this.build(filePaths)
     },
@@ -87,7 +77,7 @@ H.extend(Builder.prototype, {
         var promises = filePaths.map(function(filepath) {
 
             var dest = cmdTools.join(options.dest, filepath)
-            
+
             var id = cmdTools.clearId(filepath)
             var uri = cmdTools.join(self.options.cwd, filepath)
 
@@ -121,7 +111,7 @@ H.extend(Builder.prototype, {
         return Promise.all(promises).then(function() {
 
             var count = self.manager.count
-            
+
             var spendTime = (+new Date() - startTime) + 'ms'
 
             var message = util.format('ASB Spend %s Builded %s Modules\n', chalk.cyan(spendTime), chalk.cyan(count))
@@ -142,14 +132,20 @@ H.extend(Builder.prototype, {
     }
 })
 
-function main(src, options) {
-    return new Builder(src, options)
+function writeFile(dest, module, resolve, reject) {
+    mkdirp(path.dirname(dest), function(err) {
+        if (err) {
+            reject(err)
+        } else {
+            fs.writeFile(dest, module.result, function(err) {
+                if (err) {
+                    reject(err)
+                } else {
+                    resolve()
+                }
+            })
+        }
+    })
 }
 
-main.parsers = parsers
-main.ModuleManager = ModuleManager
-main.Module = Module
-main.cmdTools = cmdTools
-main.helper = H
-
-module.exports = main
+module.exports = Builder

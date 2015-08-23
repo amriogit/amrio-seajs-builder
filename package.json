@@ -4,7 +4,7 @@
   "description": "seajs module builder",
   "main": "./index.js",
   "scripts": {
-    "test": "mocha"
+    "test": "mocha test/test"
   },
   "bin": {
     "asb": "./cli.js"
@@ -18,6 +18,8 @@
     "clean-css": "^3.1.8",
     "commander": "^2.3.0",
     "glob": "^4.0.6",
+    "glob-array": "^0.1.2",
+    "lodash": "^3.10.1",
     "mkdirp": "^0.5.0",
     "uglify-js": "^2.4.15"
   },
@@ -40,5 +42,8 @@
     "del": "^1.1.1",
     "mocha": "^2.2.1",
     "should": "^5.2.0"
+  },
+  "engines": {
+    "node": ">=0.11.0"
   }
 }
