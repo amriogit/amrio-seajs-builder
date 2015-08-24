@@ -6,7 +6,7 @@ amrio-seajs-builder 一个 **CMD** 模块构建工具。
 
 >降低 `CMD` 构建难度，与 `seajs.config` 保持一致配置，会配置 `seajs` 就会构建。
 
-## 特性：  
+# 特性：  
 
 * `seajs` 能处理的模块，`amrio-seajs-builder` 也可以
 
@@ -156,9 +156,8 @@ asb('amrio/tips/index.js', {
     minify: true,
     exclude: ["$", "angular", "bootstrap"]
 
-}).then(function(module) {
-    console.log(module)
-    console.log(module.result)
+}).then(function() {
+    console.log('Build finish')
 })
 ```
 
@@ -168,7 +167,7 @@ asb('amrio/tips/index.js', {
 
 * `src` {String || Array[String]} 需要构建的文件路径，可以输入一个 glob 格式的字符串或字符串数组
 * `options` {Object} 构建参数，见下文
-* `return` {Promise} 回调一个 module 对象，module.result 属性为构建的结果
+* `return` {Promise} 构建结果
 
 ## options
 
@@ -232,7 +231,7 @@ resolve('amrio/lang/{lang}') === 'amrio/lang/en'
 Type: `[]`  
 Default: `[]`
 
-和 seajs.config.map 的作用一样，可以改变模块的查找路径：
+和 seajs.config.map 的作用一样，可以改变模块的查找路径
 
 ### dest
 Type: `String`  

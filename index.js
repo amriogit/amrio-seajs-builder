@@ -76,14 +76,15 @@ _.assign(Builder.prototype, {
 
         var promises = filePaths.map(function(filepath) {
 
+            var ext = path.extname(filepath)
             var dest = cmdTools.join(options.dest, filepath)
 
             var id = cmdTools.clearId(filepath)
             var uri = cmdTools.join(self.options.cwd, filepath)
+            
+            dest = ext !== parsers.defaultExtname ? dest + parsers.defaultExtname : dest
 
-            var ext = path.extname(filepath)
-
-            if (ext === parsers.defaultExtname) {
+            if (parsers.has(ext)) {
                 var meta = {
                     id: id,
                     uri: uri
