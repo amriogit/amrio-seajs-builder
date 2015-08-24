@@ -13,12 +13,17 @@ var asb = require('../index')
 var basePath = 'test/fixtures'
 var destPath = 'test/dist'
 
+var rLinefeed = /\r\n/g
+
 function fileEqual(expectedPath, actualPath) {
 
     var expected = fs.readFileSync(path.join('test/expected', expectedPath)).toString()
     var actual = fs.readFileSync(path.join(destPath, actualPath)).toString()
 
-    actual.should.be.equal(expected)
+    actual = actual.replace(rLinefeed, '\n')
+    expected = expected.replace(rLinefeed, '\n')
+
+    actual.replace(rLinefeed, '\n').should.be.equal(expected)
 }
 
 function genOptions(options) {
@@ -270,7 +275,7 @@ describe('asb', function() {
 
     it('cli', function(done) {
         var cmd = [
-            'asb',
+            'node ./cli.js',
             '-s', 'amrio/tips/index.js',
             '-c', basePath,
             '-b', basePath,

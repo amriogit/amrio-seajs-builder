@@ -1,13 +1,12 @@
 # amrio-seajs-builder changelog
 
-## 1.1.0
+## 2.0.0
 
-- 使用全异步操作，采用 promise 接口，一些破坏性的改变，使用旧版本迁移时需要注意
-- 路径查找机制使用 seajs 在浏览器端的方式，可配置 paths、alias、vars、map 来处理路径
-- 不再支持之前的 paths 基础查找路径功能，该功能转由 base 选项实现，但是只能指定一个路径，默认为当前路径，与 seajs.data.base 的作用一致
-- 新增 cwd 配置，作用与 seajs.data.cwd 一致，默认为当前路径
-- asb.parsers.add(ext, handle) 新的解析器添加接口，废除之前直接写在选项中的 parsers 配置（因为每次 asb 执行都是一个新的实例，但 parsers 都是全局使用，并不需要每次都配置）
-- 更严谨的依赖解析和代码转换
+- 使用全异步操作，采用 promise 接口，遵照 `seajs` 的模块查找机制，产生了一些破坏性的改变，使用旧版本迁移时需要注意
+- 遵照 `seajs` 在浏览器端的模块查找机制，不使用之前的 `paths` 机制查找模块，`paths` 机制存在顺序问题，且有多个 `paths` 值时解析模块路径性能较差
+- 与 `seajs` 一致，可配置 `paths、alias、vars、map` 来处理模块查找路径
+- `asb.parsers.add(ext, handle)` 新的解析器添加接口，废除之前直接写在选项中的 parsers 配置（因为每次 asb 执行都是一个新的实例，但 `parsers` 都是全局使用，并不需要每次都配置）
+- 更严谨的依赖分析和代码转换，凡是 `seajs` 能解析、执行的模块 `amrio-seajs-builder` 都支持
 - 命令行同步更新，支持读取配置文件来简化参数书写
 
 ## 1.0.1
