@@ -203,7 +203,7 @@ describe('asb', function() {
 
             asb.parsers.readFile(meta.uri).then(function(file) {
 
-                file = JSON.stringify(file)
+                file = JSON.stringify(file).replace(/(\s|\\n|\\t|\\r)+/g, ' ')
                 file = util.format(tplTemplate, meta.id, file)
                 resolve(file)
 

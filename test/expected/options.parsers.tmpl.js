@@ -1,1 +1,1 @@
-define("mod/template.tmpl", [], '<div class="panel">\r\n    <div class="panel-heading {{isShow ? \'show\' : \'hide\'}}">{{title}}</div>\r\n    <div class="panel-content">{{content}}</div>\r\n</div>');
+define("mod/template.tmpl", [], '<div class="panel"> <div class="panel-heading {{isShow ? \'show\' : \'hide\'}}">{{title}}</div> <div class="panel-content">{{content}}</div> </div>');
