@@ -45,7 +45,6 @@ define('biz/login/index', ['amrio/tips/style.css', 'amrio/tips/index'], function
     // code...
 })
 
-``` js
 // 这种情况属于未 `transport`，
 // 但因为没有检测到名叫 require 的实参，所以并不会分析合并依赖
 // 因为 require 实参被改名，这样会被认为是已经压缩过的代码，不会进行压缩处理
@@ -53,7 +52,6 @@ define(function(r, exports, module){
     // code...
 })
 
-``` js
 // 这种情况属于未 `transport`，
 // 但因为没有检测到名叫 require 的实参，所以并不会分析合并依赖
 // 因为 require 实参不存在，这样会被认为是未压缩过的代码，会进行压缩处理
