@@ -6,44 +6,62 @@ amrio-seajs-builder 一个 **CMD** 模块构建工具。
 
 >降低 `CMD` 构建难度，与 `seajs.config` 保持一致配置，会配置 `seajs` 就会构建。
 
-# 特性：  
+## 特性：  
 
 * `seajs` 能处理的模块，`amrio-seajs-builder` 也可以
 
-* `transport` `concat` 不分离，递归查找所有依赖，合并所有能合并的文件，非模块文件也可以合并
+* `transport` `concat` 不分离，递归查找所有依赖，合并所有能合并的文件，非 `CMD` 模块也可以合并
 
-* `transport` `concat` 紧密结合，依赖合并不容易出错，并且可以容易的定制合并排除策略
+* `transport` `concat` 紧密结合，依赖合并不易错，并且可以定制合并排除策略
 
-* 移除依赖列表中已经合并的依赖，避免依赖列表过长导致文件体积增大
+* 移除依赖列表中已经成功合并的依赖，避免依赖数量过多导致依赖列表过长，文件体积增大
 
-* 内置了 `Uglify-js` 压缩器，配合 `connector` 可以一个模块可以一行，使之较为容易地观察压缩后的代码
+* 内置 `Uglify-js` 压缩器，配合 `connector` 可以一行一行的显示模块，可以更直观的检查压缩后的代码
 
-# 注意
+### 注意
 
-只支持未 `transport` 过的模块的构建，普通非模块文件也可以合并。
+仅支持未 `transport` 过的模块的构建，普通非 `CMD` 文件也可以被当作依赖进行合并压缩操作。
 
 ``` js
-// 未 `transport` 的模块会进行 `transport concat` 构建
+// 这种情况属于未 `transport`，会分析方法中的依赖，然后合并压缩
 define(function(require, exports, module){
     // code...
 })
 
-// 未 `transport` 的模块会进行 `transport concat` 构建
+// 这种情况也属于未 `transport`，
+// 依赖会直接从依赖列表中获取，不再分析方法里的依赖，最后也会进行合并压缩
 define(['amrio/tips/style.css', 'amrio/tips/index'], function(require, exports, module){
     // code...
 })
 
-// 未 `transport` 的模块会进行 `transport concat` 构建
+// 这种情况也属于未 `transport`，
+// 不会修改当前已有的 id，依赖通过分析方法获得，最后合并压缩
 define('id', function(require, exports, module){
     // code...
 })
 
-// 已经 `transport` 的模块不做处理，只会被当作依赖合并
+// 这属于已 `transport` 的模块，不会做依赖分析，不会合并，只会被压缩
 define('biz/login/index', ['amrio/tips/style.css', 'amrio/tips/index'], function(require, exports, module){
     // code...
 })
 
-// 非模块不做处理，只会被当作依赖合并
+``` js
+// 这种情况属于未 `transport`，
+// 但因为没有检测到名叫 require 的实参，所以并不会分析合并依赖
+// 因为 require 实参被改名，这样会被认为是已经压缩过的代码，不会进行压缩处理
+define(function(r, exports, module){
+    // code...
+})
+
+``` js
+// 这种情况属于未 `transport`，
+// 但因为没有检测到名叫 require 的实参，所以并不会分析合并依赖
+// 因为 require 实参不存在，这样会被认为是未压缩过的代码，会进行压缩处理
+define(function(){
+    // code...
+})
+
+// 非模块不做处理，只会被当作依赖被合并压缩
 (function() {
     // code...
 })()
@@ -167,7 +185,7 @@ asb('amrio/tips/index.js', {
 
 * `src` {String || Array[String]} 需要构建的文件路径，可以输入一个 glob 格式的字符串或字符串数组
 * `options` {Object} 构建参数，见下文
-* `return` {Promise} 构建结果
+* `return` {Promise} 构建完成后的回调
 
 ## options
 
@@ -175,8 +193,9 @@ asb('amrio/tips/index.js', {
 Type: `String`  
 Default: `./`
 
-和 seajs.config.cwd 的作用一样，用于解析相对路径，seajs.use('./main') 时就是使用 `cwd` 去 resolve。
-可以和 `paths` 配合一起使用，例如：
+和 seajs.config.cwd 的作用一样，用于解析相对路径，seajs.use('./main') 时就是使用 `cwd` 去 resolve
+
+可以和 `paths` 配合使用来查找处于不同位置的模块，例如：
 
 ``` js
 asb(src, {
@@ -206,6 +225,18 @@ Default: `{}`
 
 和 seajs.config.alias 的作用一样，作为 id 的别名，构建出的模块也是使用 alias 解析值作为模块 id
 
+例如：
+``` js
+asb('$', {
+    alias: {
+        $: 'jquery/1.7.2/jquery'
+    }
+})
+
+// 构建结果
+define('jquery/1.7.2/jquery', [...], factory)
+```
+
 ### paths
 Type: `Object`  
 Default: `{}`
@@ -228,7 +259,7 @@ resolve('amrio/lang/{lang}') === 'amrio/lang/en'
 ```
 
 ### map
-Type: `[]`  
+Type: `Array`  
 Default: `[]`
 
 和 seajs.config.map 的作用一样，可以改变模块的查找路径
@@ -243,9 +274,7 @@ Default: `./dist`
 Type: `Boolean`  
 Default: `false`
 
-是否合并绝对模块，默认只合并相对模块
-
-构建时是否压缩模块，默认开启
+是否合并顶级模块，默认只合并相对模块
 
 ### exclude
 Type: `Array || Function(id)`  
@@ -278,6 +307,8 @@ Default: `true`
 Type: `Boolean`  
 Default: `true`
 
+构建时是否压缩模块，默认开启
+
 ### uglify
 Type: `Object`  
 Default: 
@@ -294,30 +325,38 @@ uglify: {
 
 仅在 `minify: true` 时有效
 
-使用 `ascii_only`，增加 `gzip` 的压缩率，避免中文乱码，还可以使用 ` Uglify-js` 的可用配置，例如 drop_console 选项
+默认使用 `ascii_only`，增加 `gzip` 的压缩率，避免中文乱码
+还可以使用 `Uglify-js` 的其它配置，例如 `drop_console`，`global_defs` 等选项
 
 ### onPost
 Type: `Function(module, dest, resolve, reject)`  
 Default: `writeFile`
 
-产出文件的发布函数，默认值是按照 `dest` 路径保存 `module.result` 到文件。处理完毕后请调用 `resolve`，出错则调用 `reject`
+产出文件的发布函数，默认值是按照 `dest` 路径保存 `module.result` 构建后的结果。处理完毕后调用 `resolve`，出错则调用 `reject`
 
 ### log
 Type: `Boolean`  
 Default: `false`
 
-打印日志开关，如果配置的是一个方法，那么将执行它，参数 `text` 就是需要打印的日志。
+打印日志开关，默认关闭
 
+# 静态方法
 ## asb.parsers.add(ext, parser)
 
 添加一个模块解析器
 
 用法
 ``` js
-asb.parsers.add('.css', function(meta, resolve, reject) {
-    asb.parsers.readFile(meta.uri).then(function(file) {
+// 使用后缀名来选择需要使用的解析器，
+// 默认传入 module 对象，和 promise 的 resolve、reject 函数
+asb.parsers.add('.css', function(module, resolve, reject) {
+
+    // asb.parsers 自带一个文件读取方法，返回一个 promise
+    asb.parsers.readFile(module.uri).then(function(file) {
         file = new CleanCSS().minify(file).styles
-        file = util.format(cssTemplate, meta.id, JSON.stringify(file))
+        file = util.format(cssTemplate, module.id, JSON.stringify(file))
+        
+        // 处理完毕后调用 resolve，否则将一直等待
         resolve(file)
     }).catch(reject)
 })

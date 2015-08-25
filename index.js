@@ -115,7 +115,7 @@ _.assign(Builder.prototype, {
 
             var spendTime = (+new Date() - startTime) + 'ms'
 
-            var message = util.format('ASB Spend %s Builded %s Modules', chalk.cyan(spendTime), chalk.cyan(count))
+            var message = util.format('ASB spend %s builded %s modules', chalk.cyan(spendTime), chalk.cyan(count))
 
             self.options.log && console.info(message)
         })
