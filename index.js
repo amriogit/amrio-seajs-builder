@@ -8,6 +8,7 @@ var glob = require('glob')
 var mkdirp = require('mkdirp')
 var chalk = require('chalk')
 var _ = require('lodash')
+var Promise = require('bluebird')
 
 var ModuleManager = require('./lib/module-manager')
 var Module = require('./lib/module')
