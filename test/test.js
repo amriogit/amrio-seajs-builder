@@ -3,12 +3,11 @@ var util = require('util')
 var path = require('path')
 var exec = require('child_process').exec
 
+var _ = require('lodash')
 var should = require('should')
 var del = require('del')
 
-var H = require('../lib/helper')
-
-var asb = require('../index')
+var asb = require('../')
 
 var basePath = 'test/fixtures'
 var destPath = 'test/dist'
@@ -28,7 +27,7 @@ function fileEqual(expectedPath, actualPath) {
 }
 
 function genOptions(options) {
-    return H.extend({
+    return _.merge({
         cwd: basePath,
         base: basePath,
         dest: destPath,
@@ -115,7 +114,6 @@ describe('asb', function() {
     it('options.vars: { id: "b" }', function(done) {
 
         asb('mod/vars.js', genOptions({
-            exclude: ["angular", "bootstrap"],
             vars: {
                 'id': 'b'
             },
@@ -128,7 +126,7 @@ describe('asb', function() {
     it('options.exclude: [biz/login/error-msg]', function(done) {
         asb('biz/login/index.js', genOptions({
             all: true,
-            exclude: ["$", "angular", "biz/login/error-msg", "bootstrap"]
+            exclude: ['biz/login/error-msg']
         })).then(function() {
             fileEqual('options.exclude.array.js', 'biz/login/index.js')
         }).then(done, done)
