@@ -6,7 +6,7 @@ var util = require('util')
 
 var glob = require('glob')
 var mkdirp = require('mkdirp')
-var chalk = require('chalk')
+var colors = require('colors/safe')
 var _ = require('lodash')
 var Promise = require('bluebird')
 
@@ -46,7 +46,7 @@ _.assign(Builder, {
 _.assign(Builder.prototype, {
     init: function() {
 
-        this.options.log && console.info(util.format('ASB Starting %s', chalk.cyan(this.src)))
+        this.options.log && console.info(util.format('ASB Starting %s', colors.cyan(this.src)))
 
         var self = this
 
@@ -116,7 +116,7 @@ _.assign(Builder.prototype, {
 
             var spendTime = (+new Date() - startTime) + 'ms'
 
-            var message = util.format('ASB spend %s builded %s modules', chalk.cyan(spendTime), chalk.cyan(count))
+            var message = util.format('ASB spend %s builded %s modules', colors.cyan(spendTime), colors.cyan(count))
 
             self.options.log && console.info(message)
         })
