@@ -19,10 +19,10 @@ define("biz/login/other", [], function(require, exports, module) {
     };
 });
 define("biz/login/style.css", [], function() {
-    seajs.importStyle(".ui-tips{color:#eee;border:1px solid #666}");
+    seajs.importStyle(".ui-tips{ color: #eee; border: 1px #666 solid; }");
 });
 define("amrio/tips/style.css", [], function() {
-    seajs.importStyle(".ui-tips{font-size:12px;border:1px solid red}.ui-tips-content{background-color:#fff}");
+    seajs.importStyle('@import url("./base.css"); .ui-tips{ font-size: 12px; border: 1px #f00 solid; } .ui-tips-content{ background-color: #fff; }');
 });
 define("amrio/tips/helper", [], function(require, exports, module) {
     "use strict";

@@ -22,7 +22,7 @@ define("login/error-msg", [ "amrio/tools/index" ], function(require, exports, mo
     };
 });
 define("login/style.css", [], function() {
-    seajs.importStyle(".ui-tips{color:#eee;border:1px solid #666}");
+    seajs.importStyle(".ui-tips{ color: #eee; border: 1px #666 solid; }");
 });
 (function() {
     console.log("这是一个 nocmd");

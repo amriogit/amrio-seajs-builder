@@ -12,7 +12,7 @@ define("amrio/tips/index", [ "$", "bootstrap", "amrio/tools/index" ], function(r
     };
 });
 define("amrio/tips/style.css", [], function() {
-    seajs.importStyle(".ui-tips{font-size:12px;border:1px solid red}.ui-tips-content{background-color:#fff}");
+    seajs.importStyle('@import url("./base.css"); .ui-tips{ font-size: 12px; border: 1px #f00 solid; } .ui-tips-content{ background-color: #fff; }');
 });
 define("amrio/tips/helper", [], function(require, exports, module) {
     "use strict";

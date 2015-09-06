@@ -14,7 +14,7 @@ define("biz/login/index", [ "$", "angular", "amrio/tips/style.css", "amrio/tips/
     require("./nocmd");
     require("./nocmd");
 });
-// footer 
+// connector 
 define("biz/login/error-msg", [ "amrio/tools/index" ], function(require, exports, module) {
     "use strict";
     require("amrio/tools/index");
@@ -22,11 +22,11 @@ define("biz/login/error-msg", [ "amrio/tools/index" ], function(require, exports
         error: "error"
     };
 });
-// footer 
+// connector 
 define("biz/login/style.css", [], function() {
-    seajs.importStyle(".ui-tips{color:#eee;border:1px solid #666}");
+    seajs.importStyle(".ui-tips{ color: #eee; border: 1px #666 solid; }");
 });
-// footer 
+// connector 
 (function() {
     console.log("这是一个 nocmd");
 })();

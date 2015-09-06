@@ -168,9 +168,9 @@ describe('asb', function() {
 
     it('options.connector: "connector"', function(done) {
         asb('biz/login/index.js', genOptions({
-            connector: "\n// footer \n"
+            connector: "\n// connector \n"
         })).then(function() {
-            fileEqual('options.footer.js', 'biz/login/index.js')
+            fileEqual('options.connector.js', 'biz/login/index.js')
         }).then(done, done)
 
     })
