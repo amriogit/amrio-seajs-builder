@@ -14,13 +14,14 @@ var destPath = 'test/dist'
 
 var rLinefeed = /\r\n/g
 
+function getFile(uri) {
+    return String(fs.readFileSync(uri)).replace(rLinefeed, '\n').trim()
+}
+
 function fileEqual(expectedPath, actualPath) {
 
-    var expected = String(fs.readFileSync(path.join('test/expected', expectedPath)))
-        .replace(rLinefeed, '\n')
-
-    var actual = String(fs.readFileSync(path.join(destPath, actualPath)))
-        .replace(rLinefeed, '\n')
+    var expected = getFile(path.join('test/expected', expectedPath))
+    var actual = getFile(path.join(destPath, actualPath))
 
     // actual.should.be.equal(expected)
     actual.length.should.be.equal(expected.length)
